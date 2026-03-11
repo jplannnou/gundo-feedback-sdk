@@ -4,7 +4,7 @@ import { FeedbackItemCard } from './FeedbackItemCard';
 import { CommentThread } from './CommentThread';
 import type { FeedbackItem, FeedbackDetailResponse, FeedbackPriority, FeedbackStatus, FeedbackType, ChangelogEntry } from '../types';
 import { formatDate } from '../utils/time-helpers';
-import { Button, Modal, Badge, Spinner, EmptyState, Input, Textarea, Tabs, Callout, Timeline } from '@gundo/ui';
+import { Button, Modal, Badge, Spinner, EmptyState, Input, Textarea, Tabs, Callout, Timeline, Pagination } from '@gundo/ui';
 import './FeedbackDashboard.css';
 
 interface FeedbackDashboardProps {
@@ -51,6 +51,10 @@ export function FeedbackDashboard({
   // Changelog
   const [changelog, setChangelog] = useState<ChangelogEntry[]>([]);
 
+  // Pagination
+  const [page, setPage] = useState(1);
+  const pageSize = 20;
+
   // Create modal
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newTitle, setNewTitle] = useState('');
@@ -63,7 +67,10 @@ export function FeedbackDashboard({
   const fetchFeedback = useCallback(async () => {
     setIsLoading(true);
     try {
-      const params: Record<string, string | number> = {};
+      const params: Record<string, string | number> = {
+        limit: pageSize,
+        offset: (page - 1) * pageSize,
+      };
       if (filterStatus) params.status = filterStatus;
       if (filterType) params.feedbackType = filterType;
       if (filterPriority) params.priority = filterPriority;
@@ -77,9 +84,12 @@ export function FeedbackDashboard({
     } finally {
       setIsLoading(false);
     }
-  }, [client, filterStatus, filterType, filterPriority, filterModule]);
+  }, [client, filterStatus, filterType, filterPriority, filterModule, page, pageSize]);
 
   useEffect(() => { fetchFeedback(); }, [fetchFeedback]);
+
+  // Reset to page 1 when filters change
+  useEffect(() => { setPage(1); }, [filterStatus, filterType, filterPriority, filterModule]);
 
   useEffect(() => {
     if (tab === 'changelog' && changelog.length === 0) {
@@ -122,6 +132,7 @@ export function FeedbackDashboard({
       setNewType('bug');
       setNewPriority('medium');
       setNewModule('');
+      setPage(1);
       fetchFeedback();
     } finally {
       setIsCreating(false);
@@ -201,11 +212,20 @@ export function FeedbackDashboard({
           ) : items.length === 0 ? (
             <EmptyState title={locale === 'es' ? 'Sin feedback aún' : 'No feedback yet'} />
           ) : (
-            <div className="gfb-dashboard__list">
-              {items.map((item) => (
-                <FeedbackItemCard key={item.id} item={item} onClick={openDetail} locale={locale} />
-              ))}
-            </div>
+            <>
+              <div className="gfb-dashboard__list">
+                {items.map((item) => (
+                  <FeedbackItemCard key={item.id} item={item} onClick={openDetail} locale={locale} />
+                ))}
+              </div>
+              <Pagination
+                page={page}
+                totalPages={Math.ceil(total / pageSize)}
+                onPageChange={setPage}
+                total={total}
+                pageSize={pageSize}
+              />
+            </>
           )}
         </>
       )}
