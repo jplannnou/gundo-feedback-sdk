@@ -21,6 +21,7 @@ export { FeedbackItemCard } from './components/FeedbackItemCard';
 export { CommentThread } from './components/CommentThread';
 export { FeedbackDashboard } from './components/FeedbackDashboard';
 export { HealthScoreCard } from './components/HealthScoreCard';
+export { AssignmentRulesPanel } from './components/AssignmentRulesPanel';
 
 // ── Utils ───────────────────────────────────────────────────────
 export { captureElementScreenshot, captureViewportScreenshot, captureAreaScreenshot } from './utils/screenshot-capture';
@@ -50,4 +51,7 @@ export type {
   ListFeedbackParams,
   FeedbackListResponse,
   FeedbackDetailResponse,
+  AssignmentRule,
+  CreateAssignmentRuleInput,
+  UpdateAssignmentRuleInput,
 } from './types';

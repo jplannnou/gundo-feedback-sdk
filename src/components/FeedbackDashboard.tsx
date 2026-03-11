@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useFeedbackContext } from '../FeedbackProvider';
 import { FeedbackItemCard } from './FeedbackItemCard';
 import { CommentThread } from './CommentThread';
+import { AssignmentRulesPanel } from './AssignmentRulesPanel';
 import type { FeedbackItem, FeedbackDetailResponse, FeedbackPriority, FeedbackStatus, FeedbackType, ChangelogEntry } from '../types';
 import { formatDate } from '../utils/time-helpers';
 import { Button, Modal, Badge, Spinner, EmptyState, Input, Textarea, Tabs, Callout, Timeline, Pagination } from '@gundo/ui';
@@ -18,7 +19,7 @@ interface FeedbackDashboardProps {
   allowCreate?: boolean;
 }
 
-type Tab = 'feedback' | 'changelog';
+type Tab = 'feedback' | 'changelog' | 'rules';
 
 const STATUSES: FeedbackStatus[] = ['pending', 'in_progress', 'resolved', 'wontfix'];
 const TYPES: FeedbackType[] = ['bug', 'improvement', 'feature', 'general', 'text_selection', 'image_area'];
@@ -160,6 +161,7 @@ export function FeedbackDashboard({
           tabs={[
             { id: 'feedback', label: `Feedback (${total})` },
             { id: 'changelog', label: 'Changelog' },
+            { id: 'rules', label: locale === 'es' ? 'Reglas' : 'Rules' },
           ]}
           activeTab={tab}
           onTabChange={(id: string) => setTab(id as Tab)}

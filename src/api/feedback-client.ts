@@ -9,6 +9,9 @@ import type {
   HealthScore,
   ChangelogEntry,
   FeedbackUser,
+  AssignmentRule,
+  CreateAssignmentRuleInput,
+  UpdateAssignmentRuleInput,
 } from '../types';
 
 /**
@@ -140,6 +143,31 @@ export class FeedbackClient {
 
   async getUsers() {
     return this.request<FeedbackUser[]>('/users');
+  }
+
+  // ── Assignment Rules ──────────────────────────────────────────
+
+  async getAssignmentRules(project?: string) {
+    const qs = project ? `?project=${project}` : '';
+    return this.request<AssignmentRule[]>(`/assignment-rules${qs}`);
+  }
+
+  async createAssignmentRule(data: CreateAssignmentRuleInput) {
+    return this.request<AssignmentRule>('/assignment-rules', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateAssignmentRule(id: number, data: UpdateAssignmentRuleInput) {
+    return this.request<AssignmentRule>(`/assignment-rules/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteAssignmentRule(id: number) {
+    return this.request<void>(`/assignment-rules/${id}`, { method: 'DELETE' });
   }
 }
 

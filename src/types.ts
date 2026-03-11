@@ -119,6 +119,7 @@ export interface FeedbackUser {
   createdAt: string;
 }
 
+export interface AssignmentRule {  id: number;  project: string;  module: string | null;  feedbackType: string | null;  assignTo: string;  assignToName: string | null;  priority: number;  active: boolean;  createdAt: string;}export interface CreateAssignmentRuleInput {  project: string;  module?: string;  feedbackType?: string;  assignTo: string;  assignToName?: string;  priority?: number;}export interface UpdateAssignmentRuleInput {  module?: string;  feedbackType?: string;  assignTo?: string;  assignToName?: string;  priority?: number;  active?: boolean;}
 // ── Config Types ────────────────────────────────────────────────
 
 export interface FeedbackConfig {
