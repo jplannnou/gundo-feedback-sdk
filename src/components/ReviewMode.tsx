@@ -212,7 +212,7 @@ export function ReviewMode({
             position: 'fixed',
             top: 0,
             right: 0,
-            width: '380px',
+            width: 'min(380px, 100vw)',
             height: '100vh',
             background: t.surface,
             borderLeft: `1px solid ${t.border}`,

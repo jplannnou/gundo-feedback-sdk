@@ -29,6 +29,8 @@
   border-radius: var(--ui-radius-lg, 0.75rem);
   border: 1px solid var(--ui-border, rgba(255, 255, 255, 0.1));
   text-align: center;
+  flex: 1;
+  min-width: 100px;
 }
 
 .gfb-dashboard__stat-num {
@@ -146,4 +148,34 @@
 .gfb-dashboard__create-row {
   display: flex;
   gap: 10px;
+}
+
+/* ── Mobile responsive ── */
+
+@media (max-width: 640px) {
+  .gfb-dashboard__stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .gfb-dashboard__stat-card {
+    min-width: 0;
+  }
+
+  .gfb-dashboard__filters {
+    flex-direction: column;
+  }
+
+  .gfb-dashboard__select {
+    width: 100%;
+  }
+
+  .gfb-dashboard__meta {
+    grid-template-columns: 1fr;
+  }
+
+  .gfb-dashboard__create-row {
+    flex-direction: column;
+  }
 }
