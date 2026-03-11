@@ -15,7 +15,8 @@
   ],
   "scripts": {
     "copy-assets": "node -e \"const fs=require('fs'),p=require('path');(function cp(s,d){fs.readdirSync(s,{withFileTypes:true}).forEach(e=>{if(e.isDirectory())cp(p.join(s,e.name),p.join(d,e.name));else if(e.name.endsWith('.css')){fs.mkdirSync(d,{recursive:true});fs.copyFileSync(p.join(s,e.name),p.join(d,e.name))}})})('src','dist')\"",
-    "build": "tsc && pnpm copy-assets",
+    "verify": "node -e \"const fs=require('fs');const missing=[];['dist/index.js','dist/index.d.ts'].forEach(f=>{if(!fs.existsSync(f))missing.push(f)});fs.readdirSync('src/components').filter(f=>f.endsWith('.css')).forEach(f=>{const d='dist/components/'+f;if(!fs.existsSync(d))missing.push(d)});if(missing.length){console.error('ERROR: missing dist files:',missing.join(', '));process.exit(1)}console.log('dist verified')\"",
+    "build": "tsc && pnpm copy-assets && pnpm verify",
     "prepublishOnly": "pnpm build"
   },
   "publishConfig": {

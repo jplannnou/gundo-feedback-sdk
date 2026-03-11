@@ -33,6 +33,26 @@ jobs:
       - name: Build
         run: pnpm build
 
+      - name: Verify dist
+        run: |
+          echo "--- Checking required dist files ---"
+          test -f dist/index.js   || (echo "ERROR: dist/index.js not found" && exit 1)
+          test -f dist/index.d.ts || (echo "ERROR: dist/index.d.ts not found" && exit 1)
+          echo "dist/index.js and dist/index.d.ts are present"
+
+          echo "--- Checking CSS files are copied from src/ to dist/ ---"
+          for src_css in $(find src -name "*.css"); do
+            rel="${src_css#src/}"
+            if [ ! -f "dist/$rel" ]; then
+              echo "ERROR: dist/$rel is missing (expected from $src_css)"
+              exit 1
+            fi
+            echo "OK: dist/$rel"
+          done
+
+          echo "--- dist/ contents ---"
+          find dist -type f | sort
+
       - name: Publish
         run: pnpm publish --no-git-checks --access public
         env:
