@@ -44,6 +44,10 @@
   text-transform: capitalize;
 }
 
+.gfb-dashboard__search {
+  margin-bottom: 12px;
+}
+
 .gfb-dashboard__filters {
   display: flex;
   gap: 10px;

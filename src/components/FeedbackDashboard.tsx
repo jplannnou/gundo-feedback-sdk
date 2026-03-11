@@ -44,6 +44,8 @@ export function FeedbackDashboard({
   const [filterType, setFilterType] = useState<string>('');
   const [filterPriority, setFilterPriority] = useState<string>('');
   const [filterModule, setFilterModule] = useState<string>('');
+const [searchQuery, setSearchQuery] = useState<string>('');
+  const [searchDebounced, setSearchDebounced] = useState<string>('');
 
   // Detail modal
   const [selectedItem, setSelectedItem] = useState<FeedbackDetailResponse | null>(null);
@@ -69,6 +71,12 @@ export function FeedbackDashboard({
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [isBulkActing, setIsBulkActing] = useState(false);
 
+  // Debounce search
+  useEffect(() => {
+    const timer = setTimeout(() => setSearchDebounced(searchQuery), 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
   const fetchFeedback = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -80,6 +88,7 @@ export function FeedbackDashboard({
       if (filterType) params.feedbackType = filterType;
       if (filterPriority) params.priority = filterPriority;
       if (filterModule) params.module = filterModule;
+      if (searchDebounced) params.search = searchDebounced;
       const res = await client.listFeedback(params);
       setItems(res.items);
       setTotal(res.total);
@@ -89,12 +98,12 @@ export function FeedbackDashboard({
     } finally {
       setIsLoading(false);
     }
-  }, [client, filterStatus, filterType, filterPriority, filterModule, page, pageSize]);
+  }, [client, filterStatus, filterType, filterPriority, filterModule, searchDebounced, page, pageSize]);
 
   useEffect(() => { fetchFeedback(); }, [fetchFeedback]);
 
   // Reset to page 1 when filters change
-  useEffect(() => { setPage(1); }, [filterStatus, filterType, filterPriority, filterModule]);
+  useEffect(() => { setPage(1); }, [filterStatus, filterType, filterPriority, filterModule, searchDebounced]);
 
   useEffect(() => {
     if (tab === 'changelog' && changelog.length === 0) {
@@ -230,6 +239,7 @@ export function FeedbackDashboard({
           </div>
 
           {/* Filters */}
+{/* Search */}          <div className="gfb-dashboard__search">            <Input              value={searchQuery}              onChange={(e) => setSearchQuery(e.target.value)}              placeholder={locale === 'es' ? 'Buscar feedback...' : 'Search feedback...'}            />          </div>
           <div className="gfb-dashboard__filters">
             <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="gfb-dashboard__select">
               <option value="">Status</option>

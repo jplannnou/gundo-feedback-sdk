@@ -133,6 +133,7 @@ export interface FeedbackConfig {
   modules?: string[];
   /** Optional: entity context (article ID, retailer ID, etc.) */
   entityId?: string;
+  search?: string;
   entityType?: string;
 }
 
@@ -157,6 +158,7 @@ export interface CreateFeedbackItemInput {
   imagePath?: string;
   boundingBox?: BoundingBox;
   entityId?: string;
+  search?: string;
   entityType?: string;
   screenshotUrl?: string;
   context?: Record<string, unknown>;
@@ -165,6 +167,7 @@ export interface CreateFeedbackItemInput {
 export interface SubmitFeedbackInput {
   items: CreateFeedbackItemInput[];
   entityId?: string;
+  search?: string;
   entityType?: string;
 }
 
@@ -183,6 +186,7 @@ export interface ListFeedbackParams {
   module?: string;
   priority?: FeedbackPriority;
   entityId?: string;
+  search?: string;
   limit?: number;
   offset?: number;
 }
