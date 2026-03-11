@@ -65,6 +65,10 @@ export function FeedbackDashboard({
   const [newModule, setNewModule] = useState('');
   const [isCreating, setIsCreating] = useState(false);
 
+  // Bulk selection
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [isBulkActing, setIsBulkActing] = useState(false);
+
   const fetchFeedback = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -140,6 +144,47 @@ export function FeedbackDashboard({
     }
   }
 
+  function toggleSelect(id: number) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleSelectAll() {
+    if (selectedIds.size === items.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(items.map((i) => i.id)));
+    }
+  }
+
+  async function bulkAction(action: 'resolve' | 'in_progress' | 'wontfix' | 'delete') {
+    if (selectedIds.size === 0 || isBulkActing) return;
+    const ids = Array.from(selectedIds);
+
+    if (action === 'delete') {
+      const msg = locale === 'es'
+        ? `¿Eliminar ${ids.length} item(s)?`
+        : `Delete ${ids.length} item(s)?`;
+      if (!confirm(msg)) return;
+    }
+
+    setIsBulkActing(true);
+    try {
+      if (action === 'delete') {
+        await client.bulkDelete(ids);
+      } else {
+        await client.bulkUpdate(ids, { status: action === 'resolve' ? 'resolved' : action });
+      }
+      setSelectedIds(new Set());
+      fetchFeedback();
+    } finally {
+      setIsBulkActing(false);
+    }
+  }
+
   const statusCounts: Record<string, number> = {};
   stats.forEach((s) => { statusCounts[s.status] = Number(s.count); });
 
@@ -206,6 +251,28 @@ export function FeedbackDashboard({
             )}
           </div>
 
+          {/* Bulk action bar */}
+          {selectedIds.size > 0 && (
+            <div className="gfb-dashboard__bulk-bar">
+              <span>{selectedIds.size} {locale === 'es' ? 'seleccionados' : 'selected'}</span>
+              <Button variant="primary" size="sm" onClick={() => bulkAction('in_progress')} loading={isBulkActing}>
+                In Progress
+              </Button>
+              <Button variant="primary" size="sm" onClick={() => bulkAction('resolve')} loading={isBulkActing}>
+                {locale === 'es' ? 'Resolver' : 'Resolve'}
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => bulkAction('wontfix')} loading={isBulkActing}>
+                Won't Fix
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => bulkAction('delete')} loading={isBulkActing}>
+                {locale === 'es' ? 'Eliminar' : 'Delete'}
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => setSelectedIds(new Set())}>
+                {locale === 'es' ? 'Cancelar' : 'Cancel'}
+              </Button>
+            </div>
+          )}
+
           {/* List */}
           {isLoading ? (
             <div className="gfb-dashboard__center">
@@ -215,9 +282,27 @@ export function FeedbackDashboard({
             <EmptyState title={locale === 'es' ? 'Sin feedback aún' : 'No feedback yet'} />
           ) : (
             <>
+              <div className="gfb-dashboard__list-header">
+                <label className="gfb-dashboard__checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.size === items.length && items.length > 0}
+                    onChange={toggleSelectAll}
+                  />
+                  {locale === 'es' ? 'Seleccionar todo' : 'Select all'}
+                </label>
+              </div>
               <div className="gfb-dashboard__list">
                 {items.map((item) => (
-                  <FeedbackItemCard key={item.id} item={item} onClick={openDetail} locale={locale} />
+                  <div key={item.id} className="gfb-dashboard__list-row">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(item.id)}
+                      onChange={() => toggleSelect(item.id)}
+                      className="gfb-dashboard__checkbox"
+                    />
+                    <FeedbackItemCard item={item} onClick={openDetail} locale={locale} />
+                  </div>
                 ))}
               </div>
               <Pagination

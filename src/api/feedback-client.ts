@@ -78,6 +78,22 @@ export class FeedbackClient {
     return this.request<void>(`/feedback/${id}`, { method: 'DELETE' });
   }
 
+  // ── Bulk Operations ─────────────────────────────────────────────
+
+  async bulkUpdate(ids: number[], data: { status?: string; priority?: string; assignedTo?: string; assignedToName?: string }) {
+    return this.request<{ updated: number }>('/feedback/bulk-update', {
+      method: 'POST',
+      body: JSON.stringify({ ids, ...data }),
+    });
+  }
+
+  async bulkDelete(ids: number[]) {
+    return this.request<{ deleted: number }>('/feedback/bulk-delete', {
+      method: 'POST',
+      body: JSON.stringify({ ids }),
+    });
+  }
+
   // ── Comments ──────────────────────────────────────────────────
 
   async addComment(feedbackId: number, content: string) {

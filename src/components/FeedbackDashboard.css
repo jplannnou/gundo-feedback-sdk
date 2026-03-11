@@ -150,6 +150,53 @@
   gap: 10px;
 }
 
+/* ── Bulk actions ── */
+
+.gfb-dashboard__bulk-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+  background: var(--ui-surface-raised, rgba(255, 255, 255, 0.06));
+  border-radius: var(--ui-radius-md, 0.5rem);
+  border: 1px solid var(--ui-primary, #67C728);
+  font-size: 13px;
+  flex-wrap: wrap;
+}
+
+.gfb-dashboard__list-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 6px;
+  font-size: 13px;
+  color: var(--ui-text-secondary, #9ca3af);
+}
+
+.gfb-dashboard__checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.gfb-dashboard__list-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.gfb-dashboard__list-row > :last-child {
+  flex: 1;
+  min-width: 0;
+}
+
+.gfb-dashboard__checkbox {
+  margin-top: 14px;
+  cursor: pointer;
+  accent-color: var(--ui-primary, #67C728);
+}
+
 /* ── Mobile responsive ── */
 
 @media (max-width: 640px) {
