@@ -1,6 +1,6 @@
 {
   "name": "@jplannnou/feedback-sdk",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -14,7 +14,8 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc",
+    "copy-assets": "node -e \"const fs=require('fs'),p=require('path');(function cp(s,d){fs.readdirSync(s,{withFileTypes:true}).forEach(e=>{if(e.isDirectory())cp(p.join(s,e.name),p.join(d,e.name));else if(e.name.endsWith('.css')){fs.mkdirSync(d,{recursive:true});fs.copyFileSync(p.join(s,e.name),p.join(d,e.name))}})})('src','dist')\"",
+    "build": "tsc && pnpm copy-assets",
     "prepublishOnly": "pnpm build"
   },
   "publishConfig": {
