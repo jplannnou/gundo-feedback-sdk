@@ -1,7 +1,6 @@
 import { useState, type KeyboardEvent } from 'react';
 import type { FeedbackComment } from '../types';
 import { timeAgo } from '../utils/time-helpers';
-import { theme as t } from '../utils/theme';
 
 interface CommentThreadProps {
   comments: FeedbackComment[];

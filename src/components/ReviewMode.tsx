@@ -42,7 +42,7 @@ export function ReviewMode({
 }: ReviewModeProps) {
   const { client } = useFeedbackContext();
 
-  const [hoveredEl, setHoveredEl] = useState<HTMLElement | null>(null);
+  const [, setHoveredEl] = useState<HTMLElement | null>(null);
   const [highlightRect, setHighlightRect] = useState<DOMRect | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [screenshotBlob, setScreenshotBlob] = useState<Blob | null>(null);

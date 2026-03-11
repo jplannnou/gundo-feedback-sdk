@@ -3,7 +3,7 @@ import { useFeedbackContext } from '../FeedbackProvider';
 import { FeedbackItemCard } from './FeedbackItemCard';
 import { CommentThread } from './CommentThread';
 import type { FeedbackItem, FeedbackDetailResponse, FeedbackPriority, FeedbackStatus, FeedbackType, ChangelogEntry } from '../types';
-import { formatDate, timeAgo } from '../utils/time-helpers';
+import { formatDate } from '../utils/time-helpers';
 import { theme as th } from '../utils/theme';
 
 interface FeedbackDashboardProps {

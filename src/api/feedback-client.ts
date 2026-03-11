@@ -18,7 +18,10 @@ import type {
  * which forwards them to the centralized Feedback API with proper auth headers.
  */
 export class FeedbackClient {
-  constructor(private baseUrl: string) {}
+  private baseUrl: string;
+  constructor(baseUrl: string) {
+    this.baseUrl = baseUrl;
+  }
 
   private async request<T>(path: string, options: RequestInit = {}): Promise<T> {
     const url = `${this.baseUrl}${path}`;
@@ -141,12 +144,12 @@ export class FeedbackClient {
 }
 
 export class FeedbackApiError extends Error {
-  constructor(
-    public status: number,
-    message: string,
-    public body?: unknown,
-  ) {
+  status: number;
+  body?: unknown;
+  constructor(status: number, message: string, body?: unknown) {
     super(message);
     this.name = 'FeedbackApiError';
+    this.status = status;
+    this.body = body;
   }
 }
