@@ -11,9 +11,11 @@
     "src"
   ],
   "peerDependencies": {
-    "react": "^19.0.0"
+    "react": "^19.0.0",
+    "@gundo/ui": "*"
   },
   "devDependencies": {
+    "@gundo/ui": "file:../gundo-ui",
     "@types/react": "^19.0.0",
     "typescript": "^5.9.0"
   }

@@ -4,7 +4,8 @@ import { FeedbackItemCard } from './FeedbackItemCard';
 import { CommentThread } from './CommentThread';
 import type { FeedbackItem, FeedbackDetailResponse, FeedbackPriority, FeedbackStatus, FeedbackType, ChangelogEntry } from '../types';
 import { formatDate } from '../utils/time-helpers';
-import { theme as th } from '../utils/theme';
+import { Button, Modal, Badge, Spinner, EmptyState, Input, Textarea, Tabs, Callout, Timeline } from '@gundo/ui';
+import './FeedbackDashboard.css';
 
 interface FeedbackDashboardProps {
   /** Show changelog tab */
@@ -127,89 +128,65 @@ export function FeedbackDashboard({
     }
   }
 
-  const S: Record<string, React.CSSProperties> = {
-    root: { fontFamily: th.fontFamily, color: th.text, minHeight: '100%' },
-    header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' },
-    title: { fontSize: '20px', fontWeight: 700 },
-    tabBar: { display: 'flex', gap: '4px', marginBottom: '20px', borderBottom: `1px solid ${th.border}` },
-    tab: { padding: '10px 20px', cursor: 'pointer', fontSize: '14px', fontWeight: 500, border: 'none', background: 'none', borderBottom: '2px solid transparent', color: th.textSecondary },
-    tabActive: { borderBottomColor: th.primary, color: th.text },
-    statsBar: { display: 'flex', gap: '16px', marginBottom: '20px', flexWrap: 'wrap' as const },
-    statCard: { padding: '12px 20px', background: th.surfaceRaised, borderRadius: th.radiusLg, border: `1px solid ${th.border}`, textAlign: 'center' as const },
-    statNum: { fontSize: '24px', fontWeight: 700 },
-    statLabel: { fontSize: '12px', color: th.textSecondary, textTransform: 'capitalize' as const },
-    filters: { display: 'flex', gap: '10px', marginBottom: '16px', flexWrap: 'wrap' as const },
-    select: { padding: '6px 12px', borderRadius: th.radiusMd, border: `1px solid ${th.border}`, background: th.surfaceRaised, color: th.text, fontSize: '13px', outline: 'none' },
-    list: { display: 'flex', flexDirection: 'column' as const, gap: '8px' },
-    overlay: { position: 'fixed' as const, inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', zIndex: 50000, display: 'flex', alignItems: 'center', justifyContent: 'center' },
-    modal: { background: th.surface, borderRadius: th.radiusXl, border: `1px solid ${th.border}`, maxWidth: '640px', width: '90vw', maxHeight: '85vh', overflow: 'auto', padding: '24px' },
-    btn: { padding: '8px 16px', borderRadius: th.radiusMd, border: 'none', fontSize: '13px', fontWeight: 600, cursor: 'pointer' },
-    btnPrimary: { background: th.primary, color: '#fff' },
-    btnSuccess: { background: th.success, color: '#fff' },
-    btnDanger: { background: th.error, color: '#fff' },
-    btnGhost: { background: th.surfaceRaised, color: th.textSecondary, border: `1px solid ${th.border}` },
-    input: { width: '100%', padding: '10px 14px', borderRadius: th.radiusMd, border: `1px solid ${th.border}`, background: th.surfaceRaised, color: th.text, fontSize: '14px', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' as const },
-  };
-
   const statusCounts: Record<string, number> = {};
   stats.forEach((s) => { statusCounts[s.status] = Number(s.count); });
 
   return (
-    <div style={S.root}>
+    <div className="gfb-dashboard">
       {/* Header */}
-      <div style={S.header}>
-        <h2 style={S.title}>Feedback</h2>
+      <div className="gfb-dashboard__header">
+        <h2 className="gfb-dashboard__title">Feedback</h2>
         {allowCreate && (
-          <button onClick={() => setShowCreateModal(true)} style={{ ...S.btn, ...S.btnPrimary }}>
+          <Button variant="primary" onClick={() => setShowCreateModal(true)}>
             + {locale === 'es' ? 'Nuevo' : 'New'}
-          </button>
+          </Button>
         )}
       </div>
 
       {/* Tabs */}
       {showChangelog && (
-        <div style={S.tabBar}>
-          <button onClick={() => setTab('feedback')} style={{ ...S.tab, ...(tab === 'feedback' ? S.tabActive : {}) }}>
-            Feedback ({total})
-          </button>
-          <button onClick={() => setTab('changelog')} style={{ ...S.tab, ...(tab === 'changelog' ? S.tabActive : {}) }}>
-            Changelog
-          </button>
-        </div>
+        <Tabs
+          tabs={[
+            { id: 'feedback', label: `Feedback (${total})` },
+            { id: 'changelog', label: 'Changelog' },
+          ]}
+          activeTab={tab}
+          onTabChange={(id: string) => setTab(id as Tab)}
+        />
       )}
 
       {tab === 'feedback' && (
         <>
           {/* Stats */}
-          <div style={S.statsBar}>
-            <div style={S.statCard}>
-              <div style={S.statNum}>{total}</div>
-              <div style={S.statLabel}>Total</div>
+          <div className="gfb-dashboard__stats">
+            <div className="gfb-dashboard__stat-card">
+              <div className="gfb-dashboard__stat-num">{total}</div>
+              <div className="gfb-dashboard__stat-label">Total</div>
             </div>
             {['pending', 'in_progress', 'resolved'].map((s) => (
-              <div key={s} style={S.statCard}>
-                <div style={S.statNum}>{statusCounts[s] || 0}</div>
-                <div style={S.statLabel}>{s.replace('_', ' ')}</div>
+              <div key={s} className="gfb-dashboard__stat-card">
+                <div className="gfb-dashboard__stat-num">{statusCounts[s] || 0}</div>
+                <div className="gfb-dashboard__stat-label">{s.replace('_', ' ')}</div>
               </div>
             ))}
           </div>
 
           {/* Filters */}
-          <div style={S.filters}>
-            <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} style={S.select}>
+          <div className="gfb-dashboard__filters">
+            <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="gfb-dashboard__select">
               <option value="">Status</option>
               {STATUSES.map((s) => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
             </select>
-            <select value={filterType} onChange={(e) => setFilterType(e.target.value)} style={S.select}>
+            <select value={filterType} onChange={(e) => setFilterType(e.target.value)} className="gfb-dashboard__select">
               <option value="">Type</option>
               {TYPES.map((t) => <option key={t} value={t}>{t.replace('_', ' ')}</option>)}
             </select>
-            <select value={filterPriority} onChange={(e) => setFilterPriority(e.target.value)} style={S.select}>
+            <select value={filterPriority} onChange={(e) => setFilterPriority(e.target.value)} className="gfb-dashboard__select">
               <option value="">Priority</option>
               {PRIORITIES.map((p) => <option key={p} value={p}>{p}</option>)}
             </select>
             {modules.length > 0 && (
-              <select value={filterModule} onChange={(e) => setFilterModule(e.target.value)} style={S.select}>
+              <select value={filterModule} onChange={(e) => setFilterModule(e.target.value)} className="gfb-dashboard__select">
                 <option value="">Module</option>
                 {modules.map((m) => <option key={m} value={m}>{m}</option>)}
               </select>
@@ -218,13 +195,13 @@ export function FeedbackDashboard({
 
           {/* List */}
           {isLoading ? (
-            <div style={{ textAlign: 'center', padding: '40px', color: '#6b7280' }}>Loading...</div>
-          ) : items.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '40px', color: '#6b7280' }}>
-              {locale === 'es' ? 'Sin feedback aún' : 'No feedback yet'}
+            <div className="gfb-dashboard__center">
+              <Spinner size="md" />
             </div>
+          ) : items.length === 0 ? (
+            <EmptyState title={locale === 'es' ? 'Sin feedback aún' : 'No feedback yet'} />
           ) : (
-            <div style={S.list}>
+            <div className="gfb-dashboard__list">
               {items.map((item) => (
                 <FeedbackItemCard key={item.id} item={item} onClick={openDetail} locale={locale} />
               ))}
@@ -235,198 +212,155 @@ export function FeedbackDashboard({
 
       {/* Changelog tab */}
       {tab === 'changelog' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+        <div className="gfb-dashboard__changelog">
           {changelog.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '40px', color: '#6b7280' }}>
-              {locale === 'es' ? 'Sin entradas de changelog' : 'No changelog entries'}
-            </div>
-          ) : changelog.map((entry) => (
-            <div key={entry.id} style={{ display: 'flex', gap: '16px' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '20px' }}>
-                <div style={{ width: '10px', height: '10px', borderRadius: '5px', background: '#3b82f6', flexShrink: 0 }} />
-                <div style={{ width: '1px', flex: 1, background: 'rgba(255,255,255,0.1)' }} />
-              </div>
-              <div style={{ flex: 1, paddingBottom: '16px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
-                  <span style={{ padding: '2px 10px', borderRadius: '6px', background: 'rgba(59,130,246,0.15)', color: '#60a5fa', fontSize: '12px', fontWeight: 700 }}>
-                    {entry.version}
-                  </span>
-                  <span style={{ fontSize: '13px', fontWeight: 600 }}>{entry.title}</span>
-                </div>
-                <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '8px' }}>{formatDate(entry.releasedAt, locale === 'es' ? 'es-AR' : 'en-US')}</div>
-                {entry.description && <p style={{ fontSize: '13px', color: '#d1d5db', marginBottom: '8px', lineHeight: 1.5 }}>{entry.description}</p>}
-                {entry.changes && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    {entry.changes.map((ch, i) => (
-                      <div key={i} style={{ fontSize: '13px', display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
-                        <span style={{
-                          padding: '1px 6px',
-                          borderRadius: '4px',
-                          fontSize: '10px',
-                          fontWeight: 700,
-                          textTransform: 'uppercase',
-                          flexShrink: 0,
-                          background: ch.type === 'fix' ? '#ef444420' : ch.type === 'feature' ? '#8b5cf620' : '#3b82f620',
-                          color: ch.type === 'fix' ? '#f87171' : ch.type === 'feature' ? '#a78bfa' : '#60a5fa',
-                        }}>
-                          {ch.type}
-                        </span>
-                        <span style={{ color: '#d1d5db' }}>{ch.description}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          ))}
+            <EmptyState title={locale === 'es' ? 'Sin entradas de changelog' : 'No changelog entries'} />
+          ) : (
+            <Timeline
+              items={changelog.map((entry) => ({
+                id: String(entry.id),
+                title: `${entry.version} — ${entry.title}`,
+                description: [
+                  entry.description,
+                  ...(entry.changes || []).map((ch) => `[${ch.type}] ${ch.description}`),
+                ].filter(Boolean).join('\n'),
+                time: formatDate(entry.releasedAt, locale === 'es' ? 'es-AR' : 'en-US'),
+                status: 'info' as const,
+              }))}
+            />
+          )}
         </div>
       )}
 
       {/* Detail Modal */}
-      {(selectedItem || isLoadingDetail) && (
-        <div style={S.overlay} onClick={() => { if (!isLoadingDetail) setSelectedItem(null); }}>
-          <div style={S.modal} onClick={(e) => e.stopPropagation()}>
-            {isLoadingDetail ? (
-              <div style={{ textAlign: 'center', padding: '40px', color: '#6b7280' }}>Loading...</div>
-            ) : selectedItem && (
-              <>
-                {/* Header */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
-                  <div>
-                    <h3 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '8px' }}>
-                      {selectedItem.title || selectedItem.comment.substring(0, 60)}
-                    </h3>
-                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                      <span style={{ padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 600, background: '#3b82f620', color: '#60a5fa' }}>
-                        {selectedItem.feedbackType.replace('_', ' ')}
-                      </span>
-                      <span style={{ padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 600, textTransform: 'capitalize', background: `${({ critical: '#ef4444', high: '#f97316', medium: '#eab308', low: '#22c55e' }[selectedItem.priority] || '#6b7280')}20`, color: ({ critical: '#ef4444', high: '#f97316', medium: '#eab308', low: '#22c55e' }[selectedItem.priority] || '#6b7280') }}>
-                        {selectedItem.priority}
-                      </span>
-                      <span style={{ padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 600, textTransform: 'capitalize', background: 'rgba(255,255,255,0.05)', color: '#9ca3af' }}>
-                        {selectedItem.status.replace('_', ' ')}
-                      </span>
-                    </div>
-                  </div>
-                  <button onClick={() => setSelectedItem(null)} style={{ background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', fontSize: '18px' }}>✕</button>
-                </div>
-
-                {/* Meta */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '16px', fontSize: '13px' }}>
-                  <div><span style={{ color: '#6b7280' }}>Reportado por:</span> {selectedItem.reportedByName || selectedItem.reportedBy}</div>
-                  <div><span style={{ color: '#6b7280' }}>Fecha:</span> {formatDate(selectedItem.createdAt, locale === 'es' ? 'es-AR' : 'en-US')}</div>
-                  {selectedItem.assignedTo && <div><span style={{ color: '#6b7280' }}>Asignado a:</span> {selectedItem.assignedToName || selectedItem.assignedTo}</div>}
-                  {selectedItem.module && <div><span style={{ color: '#6b7280' }}>Módulo:</span> {selectedItem.module}</div>}
-                </div>
-
-                {/* Description */}
-                <div style={{ padding: '14px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', marginBottom: '16px', fontSize: '14px', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
-                  {selectedItem.comment}
-                </div>
-
-                {/* Screenshot */}
-                {selectedItem.screenshotUrl && (
-                  <div style={{ marginBottom: '16px' }}>
-                    <img src={selectedItem.screenshotUrl} alt="Screenshot" style={{ maxWidth: '100%', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)' }} />
-                  </div>
-                )}
-
-                {/* Selected text (for text_selection type) */}
-                {selectedItem.selectedText && (
-                  <div style={{ marginBottom: '16px', padding: '12px', borderLeft: '3px solid #f59e0b', background: 'rgba(245,158,11,0.05)', borderRadius: '4px', fontSize: '13px', fontStyle: 'italic', color: '#d1d5db' }}>
-                    "{selectedItem.selectedText}"
-                  </div>
-                )}
-
-                {/* Resolution */}
-                {selectedItem.resolution && (
-                  <div style={{ marginBottom: '16px', padding: '12px', background: 'rgba(34,197,94,0.05)', borderRadius: '8px', borderLeft: '3px solid #22c55e' }}>
-                    <div style={{ fontSize: '12px', color: '#22c55e', fontWeight: 600, marginBottom: '4px' }}>Resolución</div>
-                    <div style={{ fontSize: '13px', color: '#d1d5db' }}>{selectedItem.resolution}</div>
-                  </div>
-                )}
-
-                {/* Admin actions */}
-                <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', flexWrap: 'wrap' }}>
-                  {selectedItem.status === 'pending' && (
-                    <button onClick={() => updateStatus(selectedItem.id, 'in_progress')} style={{ ...S.btn, ...S.btnPrimary }}>
-                      Mark In Progress
-                    </button>
-                  )}
-                  {(selectedItem.status === 'pending' || selectedItem.status === 'in_progress') && (
-                    <>
-                      <button
-                        onClick={() => {
-                          const res = prompt(locale === 'es' ? 'Descripción de la resolución:' : 'Resolution description:');
-                          if (res !== null) updateStatus(selectedItem.id, 'resolved', res || undefined);
-                        }}
-                        style={{ ...S.btn, ...S.btnSuccess }}
-                      >
-                        Mark Resolved
-                      </button>
-                      <button onClick={() => updateStatus(selectedItem.id, 'wontfix')} style={{ ...S.btn, ...S.btnGhost }}>
-                        Won't Fix
-                      </button>
-                    </>
-                  )}
-                </div>
-
-                {/* Comments */}
-                <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '16px' }}>
-                  <h4 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '12px' }}>
-                    {locale === 'es' ? 'Comentarios' : 'Comments'} ({selectedItem.comments?.length || 0})
-                  </h4>
-                  <CommentThread
-                    comments={selectedItem.comments || []}
-                    onAddComment={async (content) => {
-                      const comment = await client.addComment(selectedItem.id, content);
-                      setSelectedItem({
-                        ...selectedItem,
-                        comments: [...(selectedItem.comments || []), comment],
-                      });
-                    }}
-                    locale={locale}
-                  />
-                </div>
-              </>
-            )}
+      <Modal
+        open={!!selectedItem || isLoadingDetail}
+        onClose={() => { if (!isLoadingDetail) setSelectedItem(null); }}
+        title={selectedItem ? (selectedItem.title || selectedItem.comment.substring(0, 60)) : 'Loading...'}
+        size="lg"
+      >
+        {isLoadingDetail ? (
+          <div className="gfb-dashboard__center">
+            <Spinner size="md" />
           </div>
-        </div>
-      )}
+        ) : selectedItem && (
+          <>
+            {/* Badges */}
+            <div className="gfb-dashboard__badges">
+              <Badge variant="info">{selectedItem.feedbackType.replace('_', ' ')}</Badge>
+              <Badge variant="warning">{selectedItem.priority}</Badge>
+              <Badge variant="default">{selectedItem.status.replace('_', ' ')}</Badge>
+            </div>
+
+            {/* Meta */}
+            <div className="gfb-dashboard__meta">
+              <div><span className="gfb-dashboard__meta-label">Reportado por:</span> {selectedItem.reportedByName || selectedItem.reportedBy}</div>
+              <div><span className="gfb-dashboard__meta-label">Fecha:</span> {formatDate(selectedItem.createdAt, locale === 'es' ? 'es-AR' : 'en-US')}</div>
+              {selectedItem.assignedTo && <div><span className="gfb-dashboard__meta-label">Asignado a:</span> {selectedItem.assignedToName || selectedItem.assignedTo}</div>}
+              {selectedItem.module && <div><span className="gfb-dashboard__meta-label">Módulo:</span> {selectedItem.module}</div>}
+            </div>
+
+            {/* Description */}
+            <div className="gfb-dashboard__description">
+              {selectedItem.comment}
+            </div>
+
+            {/* Screenshot */}
+            {selectedItem.screenshotUrl && (
+              <div className="gfb-dashboard__screenshot">
+                <img src={selectedItem.screenshotUrl} alt="Screenshot" className="gfb-dashboard__screenshot-img" />
+              </div>
+            )}
+
+            {/* Selected text (for text_selection type) */}
+            {selectedItem.selectedText && (
+              <Callout variant="warning" title="Selected text">
+                "{selectedItem.selectedText}"
+              </Callout>
+            )}
+
+            {/* Resolution */}
+            {selectedItem.resolution && (
+              <Callout variant="success" title="Resolución">
+                {selectedItem.resolution}
+              </Callout>
+            )}
+
+            {/* Admin actions */}
+            <div className="gfb-dashboard__actions">
+              {selectedItem.status === 'pending' && (
+                <Button variant="primary" onClick={() => updateStatus(selectedItem.id, 'in_progress')}>
+                  Mark In Progress
+                </Button>
+              )}
+              {(selectedItem.status === 'pending' || selectedItem.status === 'in_progress') && (
+                <>
+                  <Button
+                    variant="primary"
+                    onClick={() => {
+                      const res = prompt(locale === 'es' ? 'Descripción de la resolución:' : 'Resolution description:');
+                      if (res !== null) updateStatus(selectedItem.id, 'resolved', res || undefined);
+                    }}
+                  >
+                    Mark Resolved
+                  </Button>
+                  <Button variant="ghost" onClick={() => updateStatus(selectedItem.id, 'wontfix')}>
+                    Won't Fix
+                  </Button>
+                </>
+              )}
+            </div>
+
+            {/* Comments */}
+            <div className="gfb-dashboard__comments">
+              <h4 className="gfb-dashboard__comments-title">
+                {locale === 'es' ? 'Comentarios' : 'Comments'} ({selectedItem.comments?.length || 0})
+              </h4>
+              <CommentThread
+                comments={selectedItem.comments || []}
+                onAddComment={async (content) => {
+                  const comment = await client.addComment(selectedItem.id, content);
+                  setSelectedItem({
+                    ...selectedItem,
+                    comments: [...(selectedItem.comments || []), comment],
+                  });
+                }}
+                locale={locale}
+              />
+            </div>
+          </>
+        )}
+      </Modal>
 
       {/* Create Modal */}
-      {showCreateModal && (
-        <div style={S.overlay} onClick={() => setShowCreateModal(false)}>
-          <div style={{ ...S.modal, maxWidth: '480px' }} onClick={(e) => e.stopPropagation()}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <h3 style={{ fontSize: '16px', fontWeight: 600 }}>{locale === 'es' ? 'Nuevo Feedback' : 'New Feedback'}</h3>
-              <button onClick={() => setShowCreateModal(false)} style={{ background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', fontSize: '18px' }}>✕</button>
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              <input value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder={locale === 'es' ? 'Título (opcional)' : 'Title (optional)'} style={S.input} />
-              <textarea value={newDescription} onChange={(e) => setNewDescription(e.target.value)} placeholder={locale === 'es' ? 'Descripción *' : 'Description *'} rows={4} style={{ ...S.input, resize: 'vertical' as const }} />
-              <div style={{ display: 'flex', gap: '10px' }}>
-                <select value={newType} onChange={(e) => setNewType(e.target.value as FeedbackType)} style={{ ...S.select, flex: 1 }}>
-                  {TYPES.slice(0, 4).map((t) => <option key={t} value={t}>{t}</option>)}
-                </select>
-                <select value={newPriority} onChange={(e) => setNewPriority(e.target.value as FeedbackPriority)} style={{ ...S.select, flex: 1 }}>
-                  {PRIORITIES.map((p) => <option key={p} value={p}>{p}</option>)}
-                </select>
-              </div>
-              {modules.length > 0 && (
-                <select value={newModule} onChange={(e) => setNewModule(e.target.value)} style={S.select}>
-                  <option value="">{locale === 'es' ? 'Módulo (opcional)' : 'Module (optional)'}</option>
-                  {modules.map((m) => <option key={m} value={m}>{m}</option>)}
-                </select>
-              )}
-              <button onClick={handleCreate} disabled={!newDescription.trim() || isCreating} style={{ ...S.btn, ...S.btnPrimary, opacity: (!newDescription.trim() || isCreating) ? 0.5 : 1 }}>
-                {isCreating ? '...' : locale === 'es' ? 'Crear' : 'Create'}
-              </button>
-            </div>
+      <Modal
+        open={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        title={locale === 'es' ? 'Nuevo Feedback' : 'New Feedback'}
+        size="md"
+      >
+        <div className="gfb-dashboard__create-form">
+          <Input value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder={locale === 'es' ? 'Título (opcional)' : 'Title (optional)'} />
+          <Textarea value={newDescription} onChange={(e) => setNewDescription(e.target.value)} placeholder={locale === 'es' ? 'Descripción *' : 'Description *'} rows={4} />
+          <div className="gfb-dashboard__create-row">
+            <select value={newType} onChange={(e) => setNewType(e.target.value as FeedbackType)} className="gfb-dashboard__select gfb-dashboard__select--flex">
+              {TYPES.slice(0, 4).map((t) => <option key={t} value={t}>{t}</option>)}
+            </select>
+            <select value={newPriority} onChange={(e) => setNewPriority(e.target.value as FeedbackPriority)} className="gfb-dashboard__select gfb-dashboard__select--flex">
+              {PRIORITIES.map((p) => <option key={p} value={p}>{p}</option>)}
+            </select>
           </div>
+          {modules.length > 0 && (
+            <select value={newModule} onChange={(e) => setNewModule(e.target.value)} className="gfb-dashboard__select">
+              <option value="">{locale === 'es' ? 'Módulo (opcional)' : 'Module (optional)'}</option>
+              {modules.map((m) => <option key={m} value={m}>{m}</option>)}
+            </select>
+          )}
+          <Button variant="primary" onClick={handleCreate} disabled={!newDescription.trim() || isCreating} loading={isCreating}>
+            {locale === 'es' ? 'Crear' : 'Create'}
+          </Button>
         </div>
-      )}
+      </Modal>
     </div>
   );
 }

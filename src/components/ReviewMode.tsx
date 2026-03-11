@@ -3,6 +3,7 @@ import { useFeedbackContext } from '../FeedbackProvider';
 import type { FeedbackPriority, FeedbackType } from '../types';
 import { captureElementScreenshot } from '../utils/screenshot-capture';
 import { theme as t } from '../utils/theme';
+import { Button, Textarea } from '@gundo/ui';
 
 interface ReviewModeProps {
   /** Whether review mode is active */
@@ -226,7 +227,7 @@ export function ReviewMode({
           {/* Header */}
           <div style={{ padding: '16px 20px', borderBottom: `1px solid ${t.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontWeight: 600, fontSize: '16px' }}>Nuevo Feedback</span>
-            <button onClick={resetForm} style={{ background: 'none', border: 'none', color: t.textSecondary, cursor: 'pointer', fontSize: '20px' }}>✕</button>
+            <Button variant="ghost" size="sm" onClick={resetForm}>✕</Button>
           </div>
 
           <div style={{ flex: 1, overflow: 'auto', padding: '20px' }}>
@@ -247,24 +248,11 @@ export function ReviewMode({
               <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', color: t.textSecondary, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                 Descripción *
               </label>
-              <textarea
+              <Textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Describe el problema o sugerencia..."
-                style={{
-                  width: '100%',
-                  minHeight: '100px',
-                  padding: '12px',
-                  background: 'rgba(255,255,255,0.05)',
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  borderRadius: '8px',
-                  color: t.text,
-                  resize: 'vertical',
-                  fontSize: '14px',
-                  fontFamily: 'inherit',
-                  outline: 'none',
-                  boxSizing: 'border-box',
-                }}
+                rows={4}
                 autoFocus
               />
             </div>
@@ -321,23 +309,15 @@ export function ReviewMode({
 
           {/* Submit button */}
           <div style={{ padding: '16px 20px', borderTop: `1px solid ${t.border}` }}>
-            <button
+            <Button
+              variant="primary"
               onClick={handleSubmit}
               disabled={!description.trim() || isSubmitting}
-              style={{
-                width: '100%',
-                padding: '12px',
-                borderRadius: '8px',
-                border: 'none',
-                background: !description.trim() || isSubmitting ? '#374151' : '#3b82f6',
-                color: '#fff',
-                fontSize: '14px',
-                fontWeight: 600,
-                cursor: !description.trim() || isSubmitting ? 'not-allowed' : 'pointer',
-              }}
+              loading={isSubmitting}
+              className="w-full"
             >
               {isSubmitting ? 'Enviando...' : 'Enviar Feedback'}
-            </button>
+            </Button>
           </div>
         </div>
       )}
