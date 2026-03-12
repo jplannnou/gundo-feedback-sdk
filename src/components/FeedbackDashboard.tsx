@@ -17,6 +17,8 @@ interface FeedbackDashboardProps {
   locale?: 'es' | 'en';
   /** Allow creating new feedback from dashboard */
   allowCreate?: boolean;
+  /** Override the + Nuevo button: calls this instead of opening the internal form. Use to trigger ReviewMode. */
+  onNewFeedback?: () => void;
 }
 
 type Tab = 'feedback' | 'changelog' | 'rules';
@@ -30,6 +32,7 @@ export function FeedbackDashboard({
   modules = [],
   locale = 'es',
   allowCreate = true,
+  onNewFeedback,
 }: FeedbackDashboardProps) {
   const { client, config } = useFeedbackContext();
 
@@ -203,7 +206,7 @@ const [searchQuery, setSearchQuery] = useState<string>('');
       <div className="gfb-dashboard__header">
         <h2 className="gfb-dashboard__title">Feedback</h2>
         {allowCreate && (
-          <Button variant="primary" onClick={() => setShowCreateModal(true)}>
+          <Button variant="primary" onClick={() => onNewFeedback ? onNewFeedback() : setShowCreateModal(true)}>
             + {locale === 'es' ? 'Nuevo' : 'New'}
           </Button>
         )}

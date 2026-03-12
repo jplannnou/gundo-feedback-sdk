@@ -15,8 +15,8 @@ interface FeedbackToggleProps {
 }
 
 const POSITIONS: Record<string, CSSProperties> = {
-  'bottom-right': { bottom: '24px', right: '24px' },
-  'bottom-left': { bottom: '24px', left: '24px' },
+  'bottom-right': { bottom: '72px', right: '24px' },
+  'bottom-left': { bottom: '72px', left: '24px' },
   'top-right': { top: '24px', right: '24px' },
   'top-left': { top: '24px', left: '24px' },
 };
