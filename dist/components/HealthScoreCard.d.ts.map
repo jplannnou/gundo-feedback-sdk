@@ -1,0 +1,1 @@
+{"version":3,"file":"HealthScoreCard.d.ts","sourceRoot":"","sources":["../../src/components/HealthScoreCard.tsx"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,WAAW,EAAE,MAAM,UAAU,CAAC;AAG5C,UAAU,oBAAoB;IAC5B,KAAK,EAAE,WAAW,GAAG,IAAI,CAAC;IAC1B,SAAS,CAAC,EAAE,OAAO,CAAC;CACrB;AASD,wBAAgB,eAAe,CAAC,EAAE,KAAK,EAAE,SAAS,EAAE,EAAE,oBAAoB,kDA0BzE"}
