@@ -84,6 +84,21 @@ function App() {
 - **Exports**: Everything must be exported from `src/index.ts`
 - **pnpm `file:` protocol**: Creates copies, not symlinks. Consumers must run `pnpm install` after SDK changes.
 
+## Build & Distribution
+
+Despite "no build step" for local dev, **`dist/` is committed to this repo**. This is intentional:
+- Cloud Build in consumer projects clones this repo and needs compiled output
+- Local dev uses TS source via `file:` protocol (consumers transpile)
+- When you change the SDK: build with `pnpm build`, commit `dist/`, then `pnpm install` in each consumer
+
+```bash
+# After making SDK changes:
+pnpm build                    # compiles TS → dist/
+git add dist/ && git commit   # commit dist/ (required for Cloud Build)
+# Then in each consumer project:
+pnpm install                  # picks up new dist/
+```
+
 ## Known Gotchas
 
 - `html2canvas` must be installed in each consumer frontend (not bundled by SDK)
@@ -91,3 +106,4 @@ function App() {
 - Engine and JP Assistant Dockerfiles use `--filter backend` so they skip frontend `file:` deps — no Docker changes needed
 - This repo is **public** on GitHub (required for Finance Cloud Build to clone it)
 - `FeedbackToggle` uses `onClick` prop (not `onToggle`)
+- `file:` protocol creates COPIES not symlinks — always run `pnpm install` in consumer after changes
