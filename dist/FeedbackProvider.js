@@ -2,8 +2,8 @@ import { jsx as _jsx } from "react/jsx-runtime";
 import { createContext, useContext, useMemo } from 'react';
 import { FeedbackClient } from './api/feedback-client';
 const FeedbackContext = createContext(null);
-export function FeedbackProvider({ project, apiBaseUrl, getUser, modules, entityId, entityType, children, }) {
-    const client = useMemo(() => new FeedbackClient(apiBaseUrl), [apiBaseUrl]);
+export function FeedbackProvider({ project, apiBaseUrl, getUser, getToken, modules, entityId, entityType, children, }) {
+    const client = useMemo(() => new FeedbackClient(apiBaseUrl, getToken), [apiBaseUrl, getToken]);
     const user = getUser();
     const config = useMemo(() => ({ project, apiBaseUrl, getUser, modules, entityId, entityType }), [project, apiBaseUrl, getUser, modules, entityId, entityType]);
     const value = useMemo(() => ({ config, client, user }), [config, client, user]);

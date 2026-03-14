@@ -22,18 +22,28 @@ import type {
  */
 export class FeedbackClient {
   private baseUrl: string;
-  constructor(baseUrl: string) {
+  private getToken?: () => Promise<string | null>;
+  constructor(baseUrl: string, getToken?: () => Promise<string | null>) {
     this.baseUrl = baseUrl;
+    this.getToken = getToken;
   }
 
   private async request<T>(path: string, options: RequestInit = {}): Promise<T> {
     const url = `${this.baseUrl}${path}`;
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      ...(options.headers as Record<string, string>),
+    };
+
+    // Attach auth token if available (required by consumer backend auth middleware)
+    if (this.getToken) {
+      const token = await this.getToken();
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+    }
+
     const res = await fetch(url, {
       ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
+      headers,
       credentials: 'include',
     });
 
@@ -113,9 +123,16 @@ export class FeedbackClient {
     const formData = new FormData();
     formData.append('file', file, filename || 'screenshot.png');
 
+    const headers: Record<string, string> = {};
+    if (this.getToken) {
+      const token = await this.getToken();
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+    }
+
     const res = await fetch(`${this.baseUrl}/feedback/screenshots`, {
       method: 'POST',
       body: formData,
+      headers,
       credentials: 'include',
     });
 

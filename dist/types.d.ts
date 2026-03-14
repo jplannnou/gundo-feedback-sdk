@@ -119,6 +119,33 @@ export interface FeedbackUser {
     role: string;
     createdAt: string;
 }
+export interface AssignmentRule {
+    id: number;
+    project: string;
+    module: string | null;
+    feedbackType: string | null;
+    assignTo: string;
+    assignToName: string | null;
+    priority: number;
+    active: boolean;
+    createdAt: string;
+}
+export interface CreateAssignmentRuleInput {
+    project: string;
+    module?: string;
+    feedbackType?: string;
+    assignTo: string;
+    assignToName?: string;
+    priority?: number;
+}
+export interface UpdateAssignmentRuleInput {
+    module?: string;
+    feedbackType?: string;
+    assignTo?: string;
+    assignToName?: string;
+    priority?: number;
+    active?: boolean;
+}
 export interface FeedbackConfig {
     /** Project identifier (engine | radar | finance | jp-assistant) */
     project: string;
@@ -130,6 +157,7 @@ export interface FeedbackConfig {
     modules?: string[];
     /** Optional: entity context (article ID, retailer ID, etc.) */
     entityId?: string;
+    search?: string;
     entityType?: string;
 }
 export interface FeedbackUserInfo {
@@ -150,6 +178,7 @@ export interface CreateFeedbackItemInput {
     imagePath?: string;
     boundingBox?: BoundingBox;
     entityId?: string;
+    search?: string;
     entityType?: string;
     screenshotUrl?: string;
     context?: Record<string, unknown>;
@@ -157,6 +186,7 @@ export interface CreateFeedbackItemInput {
 export interface SubmitFeedbackInput {
     items: CreateFeedbackItemInput[];
     entityId?: string;
+    search?: string;
     entityType?: string;
 }
 export interface UpdateFeedbackInput {
@@ -173,6 +203,7 @@ export interface ListFeedbackParams {
     module?: string;
     priority?: FeedbackPriority;
     entityId?: string;
+    search?: string;
     limit?: number;
     offset?: number;
 }

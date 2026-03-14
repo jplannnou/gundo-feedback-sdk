@@ -14,8 +14,9 @@ export { FeedbackItemCard } from './components/FeedbackItemCard';
 export { CommentThread } from './components/CommentThread';
 export { FeedbackDashboard } from './components/FeedbackDashboard';
 export { HealthScoreCard } from './components/HealthScoreCard';
+export { AssignmentRulesPanel } from './components/AssignmentRulesPanel';
 export { captureElementScreenshot, captureViewportScreenshot, captureAreaScreenshot } from './utils/screenshot-capture';
 export { timeAgo, formatDate } from './utils/time-helpers';
 export { theme as feedbackTheme } from './utils/theme';
-export type { FeedbackType, FeedbackPriority, FeedbackStatus, FeedbackSeverity, BoundingBox, FeedbackItem, FeedbackComment, FeedbackSession, FeedbackStats, HealthScore, ChangelogEntry, Incident, FeedbackUser, FeedbackConfig, FeedbackUserInfo, CreateFeedbackItemInput, SubmitFeedbackInput, UpdateFeedbackInput, ListFeedbackParams, FeedbackListResponse, FeedbackDetailResponse, } from './types';
+export type { FeedbackType, FeedbackPriority, FeedbackStatus, FeedbackSeverity, BoundingBox, FeedbackItem, FeedbackComment, FeedbackSession, FeedbackStats, HealthScore, ChangelogEntry, Incident, FeedbackUser, FeedbackConfig, FeedbackUserInfo, CreateFeedbackItemInput, SubmitFeedbackInput, UpdateFeedbackInput, ListFeedbackParams, FeedbackListResponse, FeedbackDetailResponse, AssignmentRule, CreateAssignmentRuleInput, UpdateAssignmentRuleInput, } from './types';
 //# sourceMappingURL=index.d.ts.map

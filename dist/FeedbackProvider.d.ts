@@ -13,6 +13,8 @@ interface FeedbackProviderProps {
     apiBaseUrl: string;
     /** Returns current user info from your app's auth */
     getUser: () => FeedbackUserInfo | null;
+    /** Returns a Firebase ID token for authenticating proxy requests */
+    getToken?: () => Promise<string | null>;
     /** Optional list of modules/sections in this project */
     modules?: string[];
     /** Optional entity context */
@@ -20,7 +22,7 @@ interface FeedbackProviderProps {
     entityType?: string;
     children: ReactNode;
 }
-export declare function FeedbackProvider({ project, apiBaseUrl, getUser, modules, entityId, entityType, children, }: FeedbackProviderProps): import("react/jsx-runtime").JSX.Element;
+export declare function FeedbackProvider({ project, apiBaseUrl, getUser, getToken, modules, entityId, entityType, children, }: FeedbackProviderProps): import("react/jsx-runtime").JSX.Element;
 export declare function useFeedbackContext(): FeedbackContextValue;
 export {};
 //# sourceMappingURL=FeedbackProvider.d.ts.map

@@ -9,7 +9,7 @@ import './FeedbackDashboard.css';
 const STATUSES = ['pending', 'in_progress', 'resolved', 'wontfix'];
 const TYPES = ['bug', 'improvement', 'feature', 'general', 'text_selection', 'image_area'];
 const PRIORITIES = ['critical', 'high', 'medium', 'low'];
-export function FeedbackDashboard({ showChangelog = true, modules = [], locale = 'es', allowCreate = true, }) {
+export function FeedbackDashboard({ showChangelog = true, modules = [], locale = 'es', allowCreate = true, onNewFeedback, }) {
     const { client, config } = useFeedbackContext();
     const [tab, setTab] = useState('feedback');
     const [items, setItems] = useState([]);
@@ -21,6 +21,8 @@ export function FeedbackDashboard({ showChangelog = true, modules = [], locale =
     const [filterType, setFilterType] = useState('');
     const [filterPriority, setFilterPriority] = useState('');
     const [filterModule, setFilterModule] = useState('');
+    const [searchQuery, setSearchQuery] = useState('');
+    const [searchDebounced, setSearchDebounced] = useState('');
     // Detail modal
     const [selectedItem, setSelectedItem] = useState(null);
     const [isLoadingDetail, setIsLoadingDetail] = useState(false);
@@ -37,6 +39,14 @@ export function FeedbackDashboard({ showChangelog = true, modules = [], locale =
     const [newPriority, setNewPriority] = useState('medium');
     const [newModule, setNewModule] = useState('');
     const [isCreating, setIsCreating] = useState(false);
+    // Bulk selection
+    const [selectedIds, setSelectedIds] = useState(new Set());
+    const [isBulkActing, setIsBulkActing] = useState(false);
+    // Debounce search
+    useEffect(() => {
+        const timer = setTimeout(() => setSearchDebounced(searchQuery), 300);
+        return () => clearTimeout(timer);
+    }, [searchQuery]);
     const fetchFeedback = useCallback(async () => {
         setIsLoading(true);
         try {
@@ -52,6 +62,8 @@ export function FeedbackDashboard({ showChangelog = true, modules = [], locale =
                 params.priority = filterPriority;
             if (filterModule)
                 params.module = filterModule;
+            if (searchDebounced)
+                params.search = searchDebounced;
             const res = await client.listFeedback(params);
             setItems(res.items);
             setTotal(res.total);
@@ -63,10 +75,10 @@ export function FeedbackDashboard({ showChangelog = true, modules = [], locale =
         finally {
             setIsLoading(false);
         }
-    }, [client, filterStatus, filterType, filterPriority, filterModule, page, pageSize]);
+    }, [client, filterStatus, filterType, filterPriority, filterModule, searchDebounced, page, pageSize]);
     useEffect(() => { fetchFeedback(); }, [fetchFeedback]);
     // Reset to page 1 when filters change
-    useEffect(() => { setPage(1); }, [filterStatus, filterType, filterPriority, filterModule]);
+    useEffect(() => { setPage(1); }, [filterStatus, filterType, filterPriority, filterModule, searchDebounced]);
     useEffect(() => {
         if (tab === 'changelog' && changelog.length === 0) {
             client.getChangelog(config.project).then(setChangelog).catch(() => { });
@@ -114,12 +126,57 @@ export function FeedbackDashboard({ showChangelog = true, modules = [], locale =
             setIsCreating(false);
         }
     }
+    function toggleSelect(id) {
+        setSelectedIds((prev) => {
+            const next = new Set(prev);
+            if (next.has(id))
+                next.delete(id);
+            else
+                next.add(id);
+            return next;
+        });
+    }
+    function toggleSelectAll() {
+        if (selectedIds.size === items.length) {
+            setSelectedIds(new Set());
+        }
+        else {
+            setSelectedIds(new Set(items.map((i) => i.id)));
+        }
+    }
+    async function bulkAction(action) {
+        if (selectedIds.size === 0 || isBulkActing)
+            return;
+        const ids = Array.from(selectedIds);
+        if (action === 'delete') {
+            const msg = locale === 'es'
+                ? `¿Eliminar ${ids.length} item(s)?`
+                : `Delete ${ids.length} item(s)?`;
+            if (!confirm(msg))
+                return;
+        }
+        setIsBulkActing(true);
+        try {
+            if (action === 'delete') {
+                await client.bulkDelete(ids);
+            }
+            else {
+                await client.bulkUpdate(ids, { status: action === 'resolve' ? 'resolved' : action });
+            }
+            setSelectedIds(new Set());
+            fetchFeedback();
+        }
+        finally {
+            setIsBulkActing(false);
+        }
+    }
     const statusCounts = {};
     stats.forEach((s) => { statusCounts[s.status] = Number(s.count); });
-    return (_jsxs("div", { className: "gfb-dashboard", children: [_jsxs("div", { className: "gfb-dashboard__header", children: [_jsx("h2", { className: "gfb-dashboard__title", children: "Feedback" }), allowCreate && (_jsxs(Button, { variant: "primary", onClick: () => setShowCreateModal(true), children: ["+ ", locale === 'es' ? 'Nuevo' : 'New'] }))] }), showChangelog && (_jsx(Tabs, { tabs: [
+    return (_jsxs("div", { className: "gfb-dashboard", children: [_jsxs("div", { className: "gfb-dashboard__header", children: [_jsx("h2", { className: "gfb-dashboard__title", children: "Feedback" }), allowCreate && (_jsxs(Button, { variant: "primary", onClick: () => onNewFeedback ? onNewFeedback() : setShowCreateModal(true), children: ["+ ", locale === 'es' ? 'Nuevo' : 'New'] }))] }), showChangelog && (_jsx(Tabs, { tabs: [
                     { id: 'feedback', label: `Feedback (${total})` },
                     { id: 'changelog', label: 'Changelog' },
-                ], activeTab: tab, onTabChange: (id) => setTab(id) })), tab === 'feedback' && (_jsxs(_Fragment, { children: [_jsxs("div", { className: "gfb-dashboard__stats", children: [_jsxs("div", { className: "gfb-dashboard__stat-card", children: [_jsx("div", { className: "gfb-dashboard__stat-num", children: total }), _jsx("div", { className: "gfb-dashboard__stat-label", children: "Total" })] }), ['pending', 'in_progress', 'resolved'].map((s) => (_jsxs("div", { className: "gfb-dashboard__stat-card", children: [_jsx("div", { className: "gfb-dashboard__stat-num", children: statusCounts[s] || 0 }), _jsx("div", { className: "gfb-dashboard__stat-label", children: s.replace('_', ' ') })] }, s)))] }), _jsxs("div", { className: "gfb-dashboard__filters", children: [_jsxs("select", { value: filterStatus, onChange: (e) => setFilterStatus(e.target.value), className: "gfb-dashboard__select", children: [_jsx("option", { value: "", children: "Status" }), STATUSES.map((s) => _jsx("option", { value: s, children: s.replace('_', ' ') }, s))] }), _jsxs("select", { value: filterType, onChange: (e) => setFilterType(e.target.value), className: "gfb-dashboard__select", children: [_jsx("option", { value: "", children: "Type" }), TYPES.map((t) => _jsx("option", { value: t, children: t.replace('_', ' ') }, t))] }), _jsxs("select", { value: filterPriority, onChange: (e) => setFilterPriority(e.target.value), className: "gfb-dashboard__select", children: [_jsx("option", { value: "", children: "Priority" }), PRIORITIES.map((p) => _jsx("option", { value: p, children: p }, p))] }), modules.length > 0 && (_jsxs("select", { value: filterModule, onChange: (e) => setFilterModule(e.target.value), className: "gfb-dashboard__select", children: [_jsx("option", { value: "", children: "Module" }), modules.map((m) => _jsx("option", { value: m, children: m }, m))] }))] }), isLoading ? (_jsx("div", { className: "gfb-dashboard__center", children: _jsx(Spinner, { size: "md" }) })) : items.length === 0 ? (_jsx(EmptyState, { title: locale === 'es' ? 'Sin feedback aún' : 'No feedback yet' })) : (_jsxs(_Fragment, { children: [_jsx("div", { className: "gfb-dashboard__list", children: items.map((item) => (_jsx(FeedbackItemCard, { item: item, onClick: openDetail, locale: locale }, item.id))) }), _jsx(Pagination, { page: page, totalPages: Math.ceil(total / pageSize), onPageChange: setPage, total: total, pageSize: pageSize })] }))] })), tab === 'changelog' && (_jsx("div", { className: "gfb-dashboard__changelog", children: changelog.length === 0 ? (_jsx(EmptyState, { title: locale === 'es' ? 'Sin entradas de changelog' : 'No changelog entries' })) : (_jsx(Timeline, { items: changelog.map((entry) => ({
+                    { id: 'rules', label: locale === 'es' ? 'Reglas' : 'Rules' },
+                ], activeTab: tab, onTabChange: (id) => setTab(id) })), tab === 'feedback' && (_jsxs(_Fragment, { children: [_jsxs("div", { className: "gfb-dashboard__stats", children: [_jsxs("div", { className: "gfb-dashboard__stat-card", children: [_jsx("div", { className: "gfb-dashboard__stat-num", children: total }), _jsx("div", { className: "gfb-dashboard__stat-label", children: "Total" })] }), ['pending', 'in_progress', 'resolved'].map((s) => (_jsxs("div", { className: "gfb-dashboard__stat-card", children: [_jsx("div", { className: "gfb-dashboard__stat-num", children: statusCounts[s] || 0 }), _jsx("div", { className: "gfb-dashboard__stat-label", children: s.replace('_', ' ') })] }, s)))] }), "          ", _jsxs("div", { className: "gfb-dashboard__search", children: ["            ", _jsx(Input, { value: searchQuery, onChange: (e) => setSearchQuery(e.target.value), placeholder: locale === 'es' ? 'Buscar feedback...' : 'Search feedback...' }), "          "] }), _jsxs("div", { className: "gfb-dashboard__filters", children: [_jsxs("select", { value: filterStatus, onChange: (e) => setFilterStatus(e.target.value), className: "gfb-dashboard__select", children: [_jsx("option", { value: "", children: "Status" }), STATUSES.map((s) => _jsx("option", { value: s, children: s.replace('_', ' ') }, s))] }), _jsxs("select", { value: filterType, onChange: (e) => setFilterType(e.target.value), className: "gfb-dashboard__select", children: [_jsx("option", { value: "", children: "Type" }), TYPES.map((t) => _jsx("option", { value: t, children: t.replace('_', ' ') }, t))] }), _jsxs("select", { value: filterPriority, onChange: (e) => setFilterPriority(e.target.value), className: "gfb-dashboard__select", children: [_jsx("option", { value: "", children: "Priority" }), PRIORITIES.map((p) => _jsx("option", { value: p, children: p }, p))] }), modules.length > 0 && (_jsxs("select", { value: filterModule, onChange: (e) => setFilterModule(e.target.value), className: "gfb-dashboard__select", children: [_jsx("option", { value: "", children: "Module" }), modules.map((m) => _jsx("option", { value: m, children: m }, m))] }))] }), selectedIds.size > 0 && (_jsxs("div", { className: "gfb-dashboard__bulk-bar", children: [_jsxs("span", { children: [selectedIds.size, " ", locale === 'es' ? 'seleccionados' : 'selected'] }), _jsx(Button, { variant: "primary", size: "sm", onClick: () => bulkAction('in_progress'), loading: isBulkActing, children: "In Progress" }), _jsx(Button, { variant: "primary", size: "sm", onClick: () => bulkAction('resolve'), loading: isBulkActing, children: locale === 'es' ? 'Resolver' : 'Resolve' }), _jsx(Button, { variant: "ghost", size: "sm", onClick: () => bulkAction('wontfix'), loading: isBulkActing, children: "Won't Fix" }), _jsx(Button, { variant: "ghost", size: "sm", onClick: () => bulkAction('delete'), loading: isBulkActing, children: locale === 'es' ? 'Eliminar' : 'Delete' }), _jsx(Button, { variant: "ghost", size: "sm", onClick: () => setSelectedIds(new Set()), children: locale === 'es' ? 'Cancelar' : 'Cancel' })] })), isLoading ? (_jsx("div", { className: "gfb-dashboard__center", children: _jsx(Spinner, { size: "md" }) })) : items.length === 0 ? (_jsx(EmptyState, { title: locale === 'es' ? 'Sin feedback aún' : 'No feedback yet' })) : (_jsxs(_Fragment, { children: [_jsx("div", { className: "gfb-dashboard__list-header", children: _jsxs("label", { className: "gfb-dashboard__checkbox-label", children: [_jsx("input", { type: "checkbox", checked: selectedIds.size === items.length && items.length > 0, onChange: toggleSelectAll }), locale === 'es' ? 'Seleccionar todo' : 'Select all'] }) }), _jsx("div", { className: "gfb-dashboard__list", children: items.map((item) => (_jsxs("div", { className: "gfb-dashboard__list-row", children: [_jsx("input", { type: "checkbox", checked: selectedIds.has(item.id), onChange: () => toggleSelect(item.id), className: "gfb-dashboard__checkbox" }), _jsx(FeedbackItemCard, { item: item, onClick: openDetail, locale: locale })] }, item.id))) }), _jsx(Pagination, { page: page, totalPages: Math.ceil(total / pageSize), onPageChange: setPage, total: total, pageSize: pageSize })] }))] })), tab === 'changelog' && (_jsx("div", { className: "gfb-dashboard__changelog", children: changelog.length === 0 ? (_jsx(EmptyState, { title: locale === 'es' ? 'Sin entradas de changelog' : 'No changelog entries' })) : (_jsx(Timeline, { items: changelog.map((entry) => ({
                         id: String(entry.id),
                         title: `${entry.version} — ${entry.title}`,
                         description: [

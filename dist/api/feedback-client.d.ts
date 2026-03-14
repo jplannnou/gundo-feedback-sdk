@@ -1,4 +1,4 @@
-import type { SubmitFeedbackInput, UpdateFeedbackInput, ListFeedbackParams, FeedbackListResponse, FeedbackDetailResponse, FeedbackStats, FeedbackComment, HealthScore, ChangelogEntry, FeedbackUser } from '../types';
+import type { SubmitFeedbackInput, UpdateFeedbackInput, ListFeedbackParams, FeedbackListResponse, FeedbackDetailResponse, FeedbackStats, FeedbackComment, HealthScore, ChangelogEntry, FeedbackUser, AssignmentRule, CreateAssignmentRuleInput, UpdateAssignmentRuleInput } from '../types';
 /**
  * HTTP client for the GUNDO Feedback Hub API.
  *
@@ -7,7 +7,8 @@ import type { SubmitFeedbackInput, UpdateFeedbackInput, ListFeedbackParams, Feed
  */
 export declare class FeedbackClient {
     private baseUrl;
-    constructor(baseUrl: string);
+    private getToken?;
+    constructor(baseUrl: string, getToken?: () => Promise<string | null>);
     private request;
     submitFeedback(data: SubmitFeedbackInput): Promise<{
         sessionId: number;
@@ -17,6 +18,17 @@ export declare class FeedbackClient {
     getFeedback(id: number): Promise<FeedbackDetailResponse>;
     updateFeedback(id: number, data: UpdateFeedbackInput): Promise<FeedbackDetailResponse>;
     deleteFeedback(id: number): Promise<void>;
+    bulkUpdate(ids: number[], data: {
+        status?: string;
+        priority?: string;
+        assignedTo?: string;
+        assignedToName?: string;
+    }): Promise<{
+        updated: number;
+    }>;
+    bulkDelete(ids: number[]): Promise<{
+        deleted: number;
+    }>;
     addComment(feedbackId: number, content: string): Promise<FeedbackComment>;
     getComments(feedbackId: number): Promise<FeedbackComment[]>;
     uploadScreenshot(file: Blob, filename?: string): Promise<{
@@ -28,6 +40,10 @@ export declare class FeedbackClient {
     getProjectHealthHistory(project: string): Promise<HealthScore[]>;
     getChangelog(project?: string): Promise<ChangelogEntry[]>;
     getUsers(): Promise<FeedbackUser[]>;
+    getAssignmentRules(project?: string): Promise<AssignmentRule[]>;
+    createAssignmentRule(data: CreateAssignmentRuleInput): Promise<AssignmentRule>;
+    updateAssignmentRule(id: number, data: UpdateAssignmentRuleInput): Promise<AssignmentRule>;
+    deleteAssignmentRule(id: number): Promise<void>;
 }
 export declare class FeedbackApiError extends Error {
     status: number;

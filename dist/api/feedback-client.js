@@ -6,17 +6,26 @@
  */
 export class FeedbackClient {
     baseUrl;
-    constructor(baseUrl) {
+    getToken;
+    constructor(baseUrl, getToken) {
         this.baseUrl = baseUrl;
+        this.getToken = getToken;
     }
     async request(path, options = {}) {
         const url = `${this.baseUrl}${path}`;
+        const headers = {
+            'Content-Type': 'application/json',
+            ...options.headers,
+        };
+        // Attach auth token if available (required by consumer backend auth middleware)
+        if (this.getToken) {
+            const token = await this.getToken();
+            if (token)
+                headers['Authorization'] = `Bearer ${token}`;
+        }
         const res = await fetch(url, {
             ...options,
-            headers: {
-                'Content-Type': 'application/json',
-                ...options.headers,
-            },
+            headers,
             credentials: 'include',
         });
         if (!res.ok) {
@@ -53,6 +62,19 @@ export class FeedbackClient {
     async deleteFeedback(id) {
         return this.request(`/feedback/${id}`, { method: 'DELETE' });
     }
+    // ── Bulk Operations ─────────────────────────────────────────────
+    async bulkUpdate(ids, data) {
+        return this.request('/feedback/bulk-update', {
+            method: 'POST',
+            body: JSON.stringify({ ids, ...data }),
+        });
+    }
+    async bulkDelete(ids) {
+        return this.request('/feedback/bulk-delete', {
+            method: 'POST',
+            body: JSON.stringify({ ids }),
+        });
+    }
     // ── Comments ──────────────────────────────────────────────────
     async addComment(feedbackId, content) {
         return this.request(`/feedback/${feedbackId}/comments`, {
@@ -67,9 +89,16 @@ export class FeedbackClient {
     async uploadScreenshot(file, filename) {
         const formData = new FormData();
         formData.append('file', file, filename || 'screenshot.png');
+        const headers = {};
+        if (this.getToken) {
+            const token = await this.getToken();
+            if (token)
+                headers['Authorization'] = `Bearer ${token}`;
+        }
         const res = await fetch(`${this.baseUrl}/feedback/screenshots`, {
             method: 'POST',
             body: formData,
+            headers,
             credentials: 'include',
         });
         if (!res.ok) {
@@ -101,6 +130,26 @@ export class FeedbackClient {
     // ── Users ─────────────────────────────────────────────────────
     async getUsers() {
         return this.request('/users');
+    }
+    // ── Assignment Rules ──────────────────────────────────────────
+    async getAssignmentRules(project) {
+        const qs = project ? `?project=${project}` : '';
+        return this.request(`/assignment-rules${qs}`);
+    }
+    async createAssignmentRule(data) {
+        return this.request('/assignment-rules', {
+            method: 'POST',
+            body: JSON.stringify(data),
+        });
+    }
+    async updateAssignmentRule(id, data) {
+        return this.request(`/assignment-rules/${id}`, {
+            method: 'PATCH',
+            body: JSON.stringify(data),
+        });
+    }
+    async deleteAssignmentRule(id) {
+        return this.request(`/assignment-rules/${id}`, { method: 'DELETE' });
     }
 }
 export class FeedbackApiError extends Error {

@@ -17,6 +17,8 @@ interface FeedbackProviderProps {
   apiBaseUrl: string;
   /** Returns current user info from your app's auth */
   getUser: () => FeedbackUserInfo | null;
+  /** Returns a Firebase ID token for authenticating proxy requests */
+  getToken?: () => Promise<string | null>;
   /** Optional list of modules/sections in this project */
   modules?: string[];
   /** Optional entity context */
@@ -29,12 +31,13 @@ export function FeedbackProvider({
   project,
   apiBaseUrl,
   getUser,
+  getToken,
   modules,
   entityId,
   entityType,
   children,
 }: FeedbackProviderProps) {
-  const client = useMemo(() => new FeedbackClient(apiBaseUrl), [apiBaseUrl]);
+  const client = useMemo(() => new FeedbackClient(apiBaseUrl, getToken), [apiBaseUrl, getToken]);
   const user = getUser();
 
   const config: FeedbackConfig = useMemo(
