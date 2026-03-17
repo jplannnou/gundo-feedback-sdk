@@ -1,10 +1,12 @@
 import { type ReactNode } from 'react';
 import { FeedbackClient } from './api/feedback-client';
+import { ContextCollector } from './utils/context-collector';
 import type { FeedbackConfig, FeedbackUserInfo } from './types';
 interface FeedbackContextValue {
     config: FeedbackConfig;
     client: FeedbackClient;
     user: FeedbackUserInfo | null;
+    contextCollector: ContextCollector;
 }
 interface FeedbackProviderProps {
     /** Project identifier */

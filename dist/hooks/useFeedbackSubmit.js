@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useFeedbackContext } from '../FeedbackProvider';
 export function useFeedbackSubmit() {
-    const { client } = useFeedbackContext();
+    const { client, contextCollector } = useFeedbackContext();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState(null);
     const [lastSessionId, setLastSessionId] = useState(null);
@@ -9,7 +9,19 @@ export function useFeedbackSubmit() {
         setIsSubmitting(true);
         setError(null);
         try {
-            const result = await client.submitFeedback(data);
+            // Auto-enrich items with collected context
+            const collectedCtx = contextCollector.collect();
+            const enrichedData = {
+                ...data,
+                items: data.items.map((item) => ({
+                    ...item,
+                    context: {
+                        ...collectedCtx,
+                        ...item.context, // user-provided context takes precedence
+                    },
+                })),
+            };
+            const result = await client.submitFeedback(enrichedData);
             setLastSessionId(result.sessionId);
             return { sessionId: result.sessionId };
         }

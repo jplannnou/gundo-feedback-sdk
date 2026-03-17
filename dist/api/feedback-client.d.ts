@@ -1,4 +1,4 @@
-import type { SubmitFeedbackInput, UpdateFeedbackInput, ListFeedbackParams, FeedbackListResponse, FeedbackDetailResponse, FeedbackStats, FeedbackComment, HealthScore, ChangelogEntry, FeedbackUser, AssignmentRule, CreateAssignmentRuleInput, UpdateAssignmentRuleInput } from '../types';
+import type { AiAnalysis, SubmitFeedbackInput, UpdateFeedbackInput, ListFeedbackParams, FeedbackListResponse, FeedbackDetailResponse, FeedbackStats, FeedbackComment, HealthScore, ChangelogEntry, FeedbackUser, AssignmentRule, CreateAssignmentRuleInput, UpdateAssignmentRuleInput } from '../types';
 /**
  * HTTP client for the GUNDO Feedback Hub API.
  *
@@ -40,6 +40,9 @@ export declare class FeedbackClient {
     getProjectHealthHistory(project: string): Promise<HealthScore[]>;
     getChangelog(project?: string): Promise<ChangelogEntry[]>;
     getUsers(): Promise<FeedbackUser[]>;
+    analyzeFeedback(id: number): Promise<{
+        aiAnalysis: AiAnalysis;
+    }>;
     getAssignmentRules(project?: string): Promise<AssignmentRule[]>;
     createAssignmentRule(data: CreateAssignmentRuleInput): Promise<AssignmentRule>;
     updateAssignmentRule(id: number, data: UpdateAssignmentRuleInput): Promise<AssignmentRule>;

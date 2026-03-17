@@ -8,6 +8,16 @@ export interface BoundingBox {
     width: number;
     height: number;
 }
+export interface AiAnalysis {
+    suggestedPriority: string;
+    suggestedCategory: string;
+    rootCause: string;
+    suggestedSolution: string;
+    sentiment: 'positive' | 'neutral' | 'negative';
+    actionable: boolean;
+    summary: string;
+    analyzedAt: string;
+}
 export interface FeedbackItem {
     id: number;
     project: string;
@@ -27,6 +37,7 @@ export interface FeedbackItem {
     entityType: string | null;
     screenshotUrl: string | null;
     context: Record<string, unknown>;
+    aiAnalysis: AiAnalysis | null;
     status: FeedbackStatus;
     resolution: string | null;
     reportedBy: string;

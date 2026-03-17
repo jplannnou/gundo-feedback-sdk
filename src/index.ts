@@ -27,9 +27,12 @@ export { AssignmentRulesPanel } from './components/AssignmentRulesPanel';
 export { captureElementScreenshot, captureViewportScreenshot, captureAreaScreenshot } from './utils/screenshot-capture';
 export { timeAgo, formatDate } from './utils/time-helpers';
 export { theme as feedbackTheme } from './utils/theme';
+export { ContextCollector } from './utils/context-collector';
+export type { CollectedContext, DeviceInfo, UserAction, ApiError, ConsoleError, PerformanceMetrics } from './utils/context-collector';
 
 // ── Types ───────────────────────────────────────────────────────
 export type {
+  AiAnalysis,
   FeedbackType,
   FeedbackPriority,
   FeedbackStatus,

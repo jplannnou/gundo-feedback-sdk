@@ -10,7 +10,7 @@ export interface UseFeedbackSubmitReturn {
 }
 
 export function useFeedbackSubmit(): UseFeedbackSubmitReturn {
-  const { client } = useFeedbackContext();
+  const { client, contextCollector } = useFeedbackContext();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const [lastSessionId, setLastSessionId] = useState<number | null>(null);
@@ -20,7 +20,19 @@ export function useFeedbackSubmit(): UseFeedbackSubmitReturn {
       setIsSubmitting(true);
       setError(null);
       try {
-        const result = await client.submitFeedback(data);
+        // Auto-enrich items with collected context
+        const collectedCtx = contextCollector.collect();
+        const enrichedData: SubmitFeedbackInput = {
+          ...data,
+          items: data.items.map((item) => ({
+            ...item,
+            context: {
+              ...collectedCtx,
+              ...item.context, // user-provided context takes precedence
+            },
+          })),
+        };
+        const result = await client.submitFeedback(enrichedData);
         setLastSessionId(result.sessionId);
         return { sessionId: result.sessionId };
       } catch (err) {

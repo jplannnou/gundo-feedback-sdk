@@ -131,6 +131,12 @@ export class FeedbackClient {
     async getUsers() {
         return this.request('/users');
     }
+    // ── AI Analysis ─────────────────────────────────────────────
+    async analyzeFeedback(id) {
+        return this.request(`/feedback/${id}/analyze`, {
+            method: 'POST',
+        });
+    }
     // ── Assignment Rules ──────────────────────────────────────────
     async getAssignmentRules(project) {
         const qs = project ? `?project=${project}` : '';

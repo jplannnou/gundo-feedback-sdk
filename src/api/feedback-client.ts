@@ -1,4 +1,5 @@
 import type {
+  AiAnalysis,
   SubmitFeedbackInput,
   UpdateFeedbackInput,
   ListFeedbackParams,
@@ -176,6 +177,14 @@ export class FeedbackClient {
 
   async getUsers() {
     return this.request<FeedbackUser[]>('/users');
+  }
+
+  // ── AI Analysis ─────────────────────────────────────────────
+
+  async analyzeFeedback(id: number) {
+    return this.request<{ aiAnalysis: AiAnalysis }>(`/feedback/${id}/analyze`, {
+      method: 'POST',
+    });
   }
 
   // ── Assignment Rules ──────────────────────────────────────────
