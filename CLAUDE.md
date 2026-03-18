@@ -4,7 +4,7 @@ Shared React component library and hooks for the GUNDO Feedback Hub. Provides cl
 
 ## Architecture
 
-**No build step** — consumers import TypeScript source directly via pnpm `file:` protocol (same pattern as `@gundo/ui`).
+Published to **GitHub Packages** as `@jplannnou/feedback-sdk`. Consumers use npm alias: `"@gundo/feedback-sdk": "npm:@jplannnou/feedback-sdk@^1.0.3"` — zero code changes needed.
 
 ```
 gundo-feedback-sdk/
@@ -78,32 +78,33 @@ function App() {
 
 ## Conventions
 
-- **No build step**: Export TypeScript source directly — consumers transpile
 - **`erasableSyntaxOnly`**: Do NOT use TypeScript parameter properties (`constructor(private x: string)`). Use explicit field declarations instead.
 - **CSS**: Use `var(--ui-*)` tokens with fallback values for standalone usage
 - **Exports**: Everything must be exported from `src/index.ts`
-- **pnpm `file:` protocol**: Creates copies, not symlinks. Consumers must run `pnpm install` after SDK changes.
 
 ## Build & Distribution
 
-Despite "no build step" for local dev, **`dist/` is committed to this repo**. This is intentional:
-- Cloud Build in consumer projects clones this repo and needs compiled output
-- Local dev uses TS source via `file:` protocol (consumers transpile)
-- When you change the SDK: build with `pnpm build`, commit `dist/`, then `pnpm install` in each consumer
+Published to **GitHub Packages** via `publish.yml` workflow (triggered by `v*` tags).
 
 ```bash
 # After making SDK changes:
-pnpm build                    # compiles TS → dist/
-git add dist/ && git commit   # commit dist/ (required for Cloud Build)
-# Then in each consumer project:
-pnpm install                  # picks up new dist/
+1. Edit src/ files
+2. Bump version in package.json
+3. Commit and push to main
+4. Tag: git tag v1.0.X && git push origin v1.0.X
+5. publish.yml runs automatically: tsc → copy-assets → verify → npm publish
+# Consumers pick up new version automatically via ^1.0.X range
 ```
+
+- `dist/` is in `.gitignore` — generated at publish time by CI
+- Consumers use npm alias: `"@gundo/feedback-sdk": "npm:@jplannnou/feedback-sdk@^1.0.3"`
+- Each consumer project needs `.npmrc` with `@jplannnou:registry=https://npm.pkg.github.com`
+- CI needs `NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}` for auth
 
 ## Known Gotchas
 
 - `html2canvas` must be installed in each consumer frontend (not bundled by SDK)
-- Finance Dockerfile needs `COPY gundo-feedback-sdk/ /gundo-feedback-sdk/` (and `cloudbuild.yaml` clones this repo)
-- Engine and JP Assistant Dockerfiles use `--filter backend` so they skip frontend `file:` deps — no Docker changes needed
-- This repo is **public** on GitHub (required for Finance Cloud Build to clone it)
 - `FeedbackToggle` uses `onClick` prop (not `onToggle`)
-- `file:` protocol creates COPIES not symlinks — always run `pnpm install` in consumer after changes
+- GitHub Packages requires auth even for public packages — `.npmrc` + `NODE_AUTH_TOKEN` always needed
+- Finance Cloud Build uses `GITHUB_NPM_TOKEN` from Secret Manager (passed as Docker build arg)
+- Default branch is `main` (renamed from `master` on 2026-03-18)
