@@ -1,6 +1,6 @@
 // ── Automatic Context Collector ──────────────────────────────────
-// Captures browser environment, user actions, API errors, console
-// errors, and performance metrics to enrich feedback submissions.
+// Captures browser environment, user actions (breadcrumbs), console
+// logs, API errors, and performance metrics to enrich feedback submissions.
 // ── Ring buffer for capped arrays ────────────────────────────────
 class RingBuffer {
     maxSize;
@@ -116,29 +116,57 @@ let _lcpValue = null;
 let _clsValue = null;
 // ── Context Collector Class ──────────────────────────────────────
 export class ContextCollector {
-    actions = new RingBuffer(10);
-    apiErrors = new RingBuffer(5);
-    consoleErrors = new RingBuffer(10);
+    sessionId;
+    breadcrumbs = new RingBuffer(50);
+    consoleLogs = new RingBuffer(30);
+    apiErrors = new RingBuffer(10);
     cleanupFns = [];
     originalFetch = null;
+    getCustomContext;
+    constructor(getCustomContext) {
+        this.sessionId = typeof crypto !== 'undefined' && crypto.randomUUID
+            ? crypto.randomUUID()
+            : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+        this.getCustomContext = getCustomContext;
+    }
     /** Start collecting context data. Call destroy() to clean up. */
     start() {
-        this.observeActions();
-        this.observeConsoleErrors();
+        this.observeBreadcrumbs();
+        this.observeConsoleLogs();
         this.interceptFetch();
         this.observePerformance();
     }
     /** Collect all current context into a snapshot */
     collect() {
+        const breadcrumbs = this.breadcrumbs.getAll();
+        const consoleLogs = this.consoleLogs.getAll();
+        const apiErrors = this.apiErrors.getAll();
+        // Build legacy aliases from enriched data
+        const actions = breadcrumbs
+            .filter((b) => b.type === 'click' || b.type === 'navigation' || b.type === 'input')
+            .map((b) => ({
+            type: b.type,
+            target: b.message,
+            timestamp: b.timestamp,
+            detail: b.data?.text,
+        }));
+        const consoleErrors = consoleLogs
+            .filter((l) => l.level === 'error')
+            .map((l) => ({ message: l.message, timestamp: l.timestamp }));
         return {
+            sessionId: this.sessionId,
             device: parseDeviceInfo(),
-            actions: this.actions.getAll(),
-            apiErrors: this.apiErrors.getAll(),
-            consoleErrors: this.consoleErrors.getAll(),
+            breadcrumbs,
+            consoleLogs,
+            apiErrors,
             performance: getPerformanceMetrics(),
+            app: this.getCustomContext?.() ?? {},
             url: window.location.href,
             referrer: document.referrer,
             timestamp: new Date().toISOString(),
+            // Legacy aliases
+            actions,
+            consoleErrors,
         };
     }
     /** Clean up all listeners and patches */
@@ -151,51 +179,115 @@ export class ContextCollector {
             this.originalFetch = null;
         }
     }
-    // ── Private: track user actions ──────────────────────────────
-    observeActions() {
+    // ── Private: breadcrumb trail (clicks, navigation, input, focus) ──
+    observeBreadcrumbs() {
+        // Click events
         const handleClick = (e) => {
             const target = e.target;
             if (!target)
                 return;
             const tag = target.tagName.toLowerCase();
-            const text = target.textContent?.slice(0, 50)?.trim() || '';
             const id = target.id ? `#${target.id}` : '';
             const cls = target.className && typeof target.className === 'string'
                 ? `.${target.className.split(' ').slice(0, 2).join('.')}`
                 : '';
-            this.actions.push({
+            const text = target.textContent?.slice(0, 50)?.trim() || '';
+            this.breadcrumbs.push({
                 type: 'click',
-                target: `${tag}${id}${cls}`,
+                category: 'ui',
+                message: `${tag}${id}${cls}`,
+                data: text ? { text } : undefined,
                 timestamp: Date.now(),
-                detail: text || undefined,
             });
         };
         document.addEventListener('click', handleClick, { capture: true, passive: true });
         this.cleanupFns.push(() => document.removeEventListener('click', handleClick, { capture: true }));
-        // Track navigations via popstate
+        // Navigation via popstate
         const handleNav = () => {
-            this.actions.push({
+            this.breadcrumbs.push({
                 type: 'navigation',
-                target: window.location.pathname,
+                category: 'ui',
+                message: window.location.pathname,
                 timestamp: Date.now(),
             });
         };
         window.addEventListener('popstate', handleNav);
         this.cleanupFns.push(() => window.removeEventListener('popstate', handleNav));
-    }
-    // ── Private: capture console errors ──────────────────────────
-    observeConsoleErrors() {
-        const origError = console.error;
-        console.error = (...args) => {
-            const message = args.map((a) => typeof a === 'string' ? a : a instanceof Error ? a.message : String(a)).join(' ').slice(0, 200);
-            this.consoleErrors.push({ message, timestamp: Date.now() });
-            origError.apply(console, args);
+        // Input events (no value for security — just tag + name)
+        const handleInput = (e) => {
+            const target = e.target;
+            if (!target)
+                return;
+            const tag = target.tagName.toLowerCase();
+            const name = target.name || target.id || '';
+            this.breadcrumbs.push({
+                type: 'input',
+                category: 'ui',
+                message: `${tag}${name ? `[name="${name}"]` : ''}`,
+                timestamp: Date.now(),
+            });
         };
-        this.cleanupFns.push(() => { console.error = origError; });
-        // Also capture unhandled errors
+        document.addEventListener('change', handleInput, { capture: true, passive: true });
+        this.cleanupFns.push(() => document.removeEventListener('change', handleInput, { capture: true }));
+        // Focus events on interactive elements
+        const handleFocus = (e) => {
+            const target = e.target;
+            if (!target || !target.tagName)
+                return;
+            const tag = target.tagName.toLowerCase();
+            if (!['input', 'textarea', 'select', 'button', 'a'].includes(tag))
+                return;
+            const id = target.id ? `#${target.id}` : '';
+            this.breadcrumbs.push({
+                type: 'focus',
+                category: 'ui',
+                message: `${tag}${id}`,
+                timestamp: Date.now(),
+            });
+        };
+        document.addEventListener('focusin', handleFocus, { capture: true, passive: true });
+        this.cleanupFns.push(() => document.removeEventListener('focusin', handleFocus, { capture: true }));
+    }
+    // ── Private: console log/warn/info/error capture ──────────────
+    observeConsoleLogs() {
+        const levels = ['log', 'info', 'warn', 'error'];
+        const originals = {};
+        for (const level of levels) {
+            originals[level] = console[level];
+            console[level] = (...args) => {
+                const message = args.map((a) => typeof a === 'string' ? a : a instanceof Error ? a.message : String(a)).join(' ').slice(0, 300);
+                let stack;
+                if (level === 'error' || level === 'warn') {
+                    const errorArg = args.find((a) => a instanceof Error);
+                    if (errorArg?.stack) {
+                        stack = errorArg.stack.slice(0, 500);
+                    }
+                }
+                this.consoleLogs.push({ level, message, stack, timestamp: Date.now() });
+                // Also add to breadcrumb trail for console errors/warnings
+                if (level === 'error' || level === 'warn') {
+                    this.breadcrumbs.push({
+                        type: 'console',
+                        category: 'console',
+                        message: message.slice(0, 80),
+                        data: { level },
+                        timestamp: Date.now(),
+                    });
+                }
+                originals[level].apply(console, args);
+            };
+        }
+        this.cleanupFns.push(() => {
+            for (const level of levels) {
+                console[level] = originals[level];
+            }
+        });
+        // Unhandled errors
         const handleError = (e) => {
-            this.consoleErrors.push({
-                message: `Unhandled: ${e.message}`.slice(0, 200),
+            this.consoleLogs.push({
+                level: 'error',
+                message: `Unhandled: ${e.message}`.slice(0, 300),
+                stack: e.error?.stack?.slice(0, 500),
                 timestamp: Date.now(),
             });
         };
@@ -203,39 +295,74 @@ export class ContextCollector {
         this.cleanupFns.push(() => window.removeEventListener('error', handleError));
         // Unhandled promise rejections
         const handleRejection = (e) => {
-            const msg = e.reason instanceof Error ? e.reason.message : String(e.reason);
-            this.consoleErrors.push({
-                message: `Unhandled rejection: ${msg}`.slice(0, 200),
+            const err = e.reason instanceof Error ? e.reason : null;
+            const msg = err ? err.message : String(e.reason);
+            this.consoleLogs.push({
+                level: 'error',
+                message: `Unhandled rejection: ${msg}`.slice(0, 300),
+                stack: err?.stack?.slice(0, 500),
                 timestamp: Date.now(),
             });
         };
         window.addEventListener('unhandledrejection', handleRejection);
         this.cleanupFns.push(() => window.removeEventListener('unhandledrejection', handleRejection));
     }
-    // ── Private: intercept fetch for API errors ──────────────────
+    // ── Private: intercept fetch for API errors + breadcrumbs ──────
     interceptFetch() {
         this.originalFetch = window.fetch;
         const self = this;
         window.fetch = async function (input, init) {
             const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
-            const method = init?.method || 'GET';
+            const method = (init?.method || 'GET').toUpperCase();
+            const startTime = performance.now();
             try {
                 const response = await self.originalFetch.call(window, input, init);
+                const duration = Math.round(performance.now() - startTime);
                 if (!response.ok && response.status >= 400) {
+                    // Try to read response body for error context
+                    let responseBody = '';
+                    try {
+                        const cloned = response.clone();
+                        const text = await cloned.text();
+                        responseBody = text.slice(0, 200);
+                    }
+                    catch { /* body not readable */ }
                     self.apiErrors.push({
                         url: url.slice(0, 200),
-                        method: method.toUpperCase(),
+                        method,
                         status: response.status,
+                        statusText: response.statusText || '',
+                        duration,
+                        responseBody,
+                        timestamp: Date.now(),
+                    });
+                    // Add XHR breadcrumb for failed requests
+                    self.breadcrumbs.push({
+                        type: 'xhr',
+                        category: 'http',
+                        message: `${method} ${url.slice(0, 80)} → ${response.status}`,
+                        data: { status: response.status, duration },
                         timestamp: Date.now(),
                     });
                 }
                 return response;
             }
             catch (err) {
+                const duration = Math.round(performance.now() - startTime);
                 self.apiErrors.push({
                     url: url.slice(0, 200),
-                    method: method.toUpperCase(),
+                    method,
                     status: 0,
+                    statusText: 'Network Error',
+                    duration,
+                    responseBody: err instanceof Error ? err.message.slice(0, 200) : '',
+                    timestamp: Date.now(),
+                });
+                self.breadcrumbs.push({
+                    type: 'xhr',
+                    category: 'http',
+                    message: `${method} ${url.slice(0, 80)} → Network Error`,
+                    data: { status: 0, duration },
                     timestamp: Date.now(),
                 });
                 throw err;

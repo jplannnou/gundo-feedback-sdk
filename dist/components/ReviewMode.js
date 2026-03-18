@@ -1,8 +1,8 @@
 import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useFeedbackContext } from '../FeedbackProvider';
-import { captureElementScreenshot } from '../utils/screenshot-capture';
-import { theme as t } from '../utils/theme';
+import { useFeedbackContext } from '../FeedbackProvider.js';
+import { captureElementScreenshot } from '../utils/screenshot-capture.js';
+import { theme as t } from '../utils/theme.js';
 import { Button, Textarea } from '@gundo/ui';
 const DEFAULT_TYPES = ['bug', 'improvement', 'feature'];
 const PRIORITY_COLORS = {

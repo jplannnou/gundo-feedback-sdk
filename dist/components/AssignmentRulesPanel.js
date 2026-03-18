@@ -1,6 +1,6 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { useState, useEffect, useCallback } from 'react';
-import { useFeedbackContext } from '../FeedbackProvider';
+import { useFeedbackContext } from '../FeedbackProvider.js';
 import { Button, Modal, Input, EmptyState, Spinner, Badge } from '@gundo/ui';
 const TYPES = ['bug', 'improvement', 'feature', 'general', 'text_selection', 'image_area'];
 export function AssignmentRulesPanel({ modules = [], locale = 'es' }) {

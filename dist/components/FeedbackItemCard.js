@@ -1,5 +1,5 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
-import { timeAgo } from '../utils/time-helpers';
+import { timeAgo } from '../utils/time-helpers.js';
 import { Card, Badge } from '@gundo/ui';
 const TYPE_BADGE = {
     bug: { label: 'B', variant: 'error' },

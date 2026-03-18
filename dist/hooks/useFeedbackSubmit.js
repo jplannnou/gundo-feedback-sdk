@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { useFeedbackContext } from '../FeedbackProvider';
+import { useFeedbackContext } from '../FeedbackProvider.js';
 export function useFeedbackSubmit() {
     const { client, contextCollector } = useFeedbackContext();
     const [isSubmitting, setIsSubmitting] = useState(false);

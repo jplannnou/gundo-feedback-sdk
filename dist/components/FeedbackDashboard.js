@@ -1,9 +1,9 @@
 import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
 import { useState, useEffect, useCallback } from 'react';
-import { useFeedbackContext } from '../FeedbackProvider';
-import { FeedbackItemCard } from './FeedbackItemCard';
-import { CommentThread } from './CommentThread';
-import { formatDate } from '../utils/time-helpers';
+import { useFeedbackContext } from '../FeedbackProvider.js';
+import { FeedbackItemCard } from './FeedbackItemCard.js';
+import { CommentThread } from './CommentThread.js';
+import { formatDate } from '../utils/time-helpers.js';
 import { Button, Modal, Badge, Spinner, EmptyState, Input, Textarea, Tabs, Callout, Timeline, Pagination } from '@gundo/ui';
 import './FeedbackDashboard.css';
 const STATUSES = ['pending', 'in_progress', 'resolved', 'wontfix'];

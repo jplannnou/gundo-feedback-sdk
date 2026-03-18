@@ -1,5 +1,5 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
-import { theme as t } from '../utils/theme';
+import { theme as t } from '../utils/theme.js';
 const POSITIONS = {
     'bottom-right': { bottom: '72px', right: '24px' },
     'bottom-left': { bottom: '72px', left: '24px' },

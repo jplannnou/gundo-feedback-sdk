@@ -1,6 +1,6 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { useState } from 'react';
-import { timeAgo } from '../utils/time-helpers';
+import { timeAgo } from '../utils/time-helpers.js';
 import { Avatar, Input, Button } from '@gundo/ui';
 export function CommentThread({ comments, onAddComment, locale = 'en' }) {
     const [content, setContent] = useState('');

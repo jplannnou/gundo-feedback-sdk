@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useFeedbackContext } from '../FeedbackProvider';
+import { useFeedbackContext } from '../FeedbackProvider.js';
 export function useFeedbackList(params = {}) {
     const { client } = useFeedbackContext();
     const [data, setData] = useState(null);

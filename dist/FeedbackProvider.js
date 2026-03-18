@@ -1,14 +1,14 @@
 import { jsx as _jsx } from "react/jsx-runtime";
 import { createContext, useContext, useEffect, useMemo, useRef } from 'react';
-import { FeedbackClient } from './api/feedback-client';
-import { ContextCollector } from './utils/context-collector';
+import { FeedbackClient } from './api/feedback-client.js';
+import { ContextCollector } from './utils/context-collector.js';
 const FeedbackContext = createContext(null);
-export function FeedbackProvider({ project, apiBaseUrl, getUser, getToken, modules, entityId, entityType, children, }) {
+export function FeedbackProvider({ project, apiBaseUrl, getUser, getToken, modules, entityId, entityType, getCustomContext, children, }) {
     const client = useMemo(() => new FeedbackClient(apiBaseUrl, getToken), [apiBaseUrl, getToken]);
     const user = getUser();
     const collectorRef = useRef(null);
     if (!collectorRef.current) {
-        collectorRef.current = new ContextCollector();
+        collectorRef.current = new ContextCollector(getCustomContext);
     }
     const contextCollector = collectorRef.current;
     useEffect(() => {

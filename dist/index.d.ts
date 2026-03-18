@@ -19,6 +19,6 @@ export { captureElementScreenshot, captureViewportScreenshot, captureAreaScreens
 export { timeAgo, formatDate } from './utils/time-helpers';
 export { theme as feedbackTheme } from './utils/theme';
 export { ContextCollector } from './utils/context-collector';
-export type { CollectedContext, DeviceInfo, UserAction, ApiError, ConsoleError, PerformanceMetrics } from './utils/context-collector';
+export type { CollectedContext, DeviceInfo, UserAction, ApiError, ConsoleError, PerformanceMetrics, Breadcrumb, ConsoleLog } from './utils/context-collector';
 export type { AiAnalysis, FeedbackType, FeedbackPriority, FeedbackStatus, FeedbackSeverity, BoundingBox, FeedbackItem, FeedbackComment, FeedbackSession, FeedbackStats, HealthScore, ChangelogEntry, Incident, FeedbackUser, FeedbackConfig, FeedbackUserInfo, CreateFeedbackItemInput, SubmitFeedbackInput, UpdateFeedbackInput, ListFeedbackParams, FeedbackListResponse, FeedbackDetailResponse, AssignmentRule, CreateAssignmentRuleInput, UpdateAssignmentRuleInput, } from './types';
 //# sourceMappingURL=index.d.ts.map

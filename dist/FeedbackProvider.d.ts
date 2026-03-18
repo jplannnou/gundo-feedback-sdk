@@ -22,9 +22,11 @@ interface FeedbackProviderProps {
     /** Optional entity context */
     entityId?: string;
     entityType?: string;
+    /** Optional: returns custom app context (Redux state, feature flags, build version) */
+    getCustomContext?: () => Record<string, unknown>;
     children: ReactNode;
 }
-export declare function FeedbackProvider({ project, apiBaseUrl, getUser, getToken, modules, entityId, entityType, children, }: FeedbackProviderProps): import("react/jsx-runtime").JSX.Element;
+export declare function FeedbackProvider({ project, apiBaseUrl, getUser, getToken, modules, entityId, entityType, getCustomContext, children, }: FeedbackProviderProps): import("react/jsx-runtime").JSX.Element;
 export declare function useFeedbackContext(): FeedbackContextValue;
 export {};
 //# sourceMappingURL=FeedbackProvider.d.ts.map
