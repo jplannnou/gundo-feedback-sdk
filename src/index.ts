@@ -28,7 +28,7 @@ export { captureElementScreenshot, captureViewportScreenshot, captureAreaScreens
 export { timeAgo, formatDate } from './utils/time-helpers';
 export { theme as feedbackTheme } from './utils/theme';
 export { ContextCollector } from './utils/context-collector';
-export type { CollectedContext, DeviceInfo, UserAction, ApiError, ConsoleError, PerformanceMetrics } from './utils/context-collector';
+export type { CollectedContext, DeviceInfo, UserAction, ApiError, ConsoleError, PerformanceMetrics, Breadcrumb, ConsoleLog } from './utils/context-collector';
 
 // ── Types ───────────────────────────────────────────────────────
 export type {

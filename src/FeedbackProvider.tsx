@@ -26,6 +26,8 @@ interface FeedbackProviderProps {
   /** Optional entity context */
   entityId?: string;
   entityType?: string;
+  /** Optional: returns custom app context (Redux state, feature flags, build version) */
+  getCustomContext?: () => Record<string, unknown>;
   children: ReactNode;
 }
 
@@ -37,6 +39,7 @@ export function FeedbackProvider({
   modules,
   entityId,
   entityType,
+  getCustomContext,
   children,
 }: FeedbackProviderProps) {
   const client = useMemo(() => new FeedbackClient(apiBaseUrl, getToken), [apiBaseUrl, getToken]);
@@ -44,7 +47,7 @@ export function FeedbackProvider({
 
   const collectorRef = useRef<ContextCollector | null>(null);
   if (!collectorRef.current) {
-    collectorRef.current = new ContextCollector();
+    collectorRef.current = new ContextCollector(getCustomContext);
   }
   const contextCollector = collectorRef.current;
 
