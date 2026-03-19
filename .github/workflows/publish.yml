@@ -15,8 +15,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Clone @gundo/ui (peer dependency for build)
-        run: git clone --depth 1 https://github.com/jplannnou/gundo-ui.git ../gundo-ui
+      - name: Clone and build @gundo/ui (peer dependency)
+        run: |
+          git clone --depth 1 https://github.com/jplannnou/gundo-ui.git ../gundo-ui
+          cd ../gundo-ui && pnpm install --no-frozen-lockfile && pnpm build
 
       - uses: pnpm/action-setup@v4
         with:
