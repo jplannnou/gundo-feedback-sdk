@@ -222,7 +222,17 @@ export function ReviewMode({
             color: t.text,
             fontFamily: t.fontFamily,
             fontSize: '14px',
-          }}
+            // Inject CSS custom properties so @gundo/ui components resolve tokens correctly
+            '--ui-surface': '#292E37',
+            '--ui-surface-hover': 'rgba(255,255,255,0.07)',
+            '--ui-text': '#F2F4F3',
+            '--ui-text-secondary': '#9ca3af',
+            '--ui-text-muted': '#6b7280',
+            '--ui-border': 'rgba(255,255,255,0.1)',
+            '--ui-border-hover': 'rgba(255,255,255,0.2)',
+            '--ui-primary': '#67C728',
+            '--ui-primary-hover': '#5ab322',
+          } as CSSProperties}
         >
           {/* Header */}
           <div style={{ padding: '16px 20px', borderBottom: `1px solid ${t.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
