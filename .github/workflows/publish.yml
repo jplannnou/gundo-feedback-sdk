@@ -86,9 +86,9 @@ jobs:
           - repo: jplannnou/gundo-feedback
             pkg_dir: frontend
           # Gundo org repos
-          - repo: Gundo-Health-and-Food/gundo-website-ui
+          - repo: Gundo-Health-and-Food/gundo-admin-fitness-ui
             pkg_dir: .
-          - repo: Gundo-Health-and-Food/gundo-internal-dashboard-ui
+          - repo: Gundo-Health-and-Food/gundo-website-ui
             pkg_dir: .
     steps:
       - name: Update SDK in ${{ matrix.repo }}
