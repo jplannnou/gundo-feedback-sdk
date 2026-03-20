@@ -122,7 +122,7 @@ export class FeedbackClient {
 
   async uploadScreenshot(file: Blob, filename?: string): Promise<{ url: string }> {
     const formData = new FormData();
-    formData.append('file', file, filename || 'screenshot.png');
+    formData.append('screenshot', file, filename || 'screenshot.png');
 
     const headers: Record<string, string> = {};
     if (this.getToken) {
