@@ -2,7 +2,7 @@ name: Security Audit
 
 on:
   schedule:
-    - cron: '0 8 * * 1'  # Every Monday 8am UTC
+    - cron: '0 8 * * 4'  # Thursday 8am UTC
   workflow_dispatch:
 
 jobs:
@@ -21,6 +21,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: 'pnpm'
 
       - name: Security audit
         run: pnpm audit --audit-level=high

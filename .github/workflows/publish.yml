@@ -25,6 +25,7 @@ jobs:
         with:
           node-version: 22
           registry-url: https://npm.pkg.github.com
+          cache: 'pnpm'
 
       - name: Clone and build @gundo/ui (peer dependency)
         run: |
