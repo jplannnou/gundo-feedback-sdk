@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, type CSSProperties } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo, type CSSProperties } from 'react';
 import { useFeedbackContext } from '../FeedbackProvider';
 import type { FeedbackPriority, FeedbackType } from '../types';
 import { captureElementScreenshot } from '../utils/screenshot-capture';
@@ -48,6 +48,7 @@ export function ReviewMode({
   const [showForm, setShowForm] = useState(false);
   const [screenshotBlob, setScreenshotBlob] = useState<Blob | null>(null);
   const [screenshotPreview, setScreenshotPreview] = useState<string | null>(null);
+  const [screenshotFailed, setScreenshotFailed] = useState(false);
 
   const [description, setDescription] = useState('');
   const [feedbackType, setFeedbackType] = useState<FeedbackType>(types[0]);
@@ -56,11 +57,20 @@ export function ReviewMode({
   const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   const formRef = useRef<HTMLDivElement>(null);
+  const pointerDownTargetRef = useRef<HTMLElement | null>(null);
 
-  // ── Element highlighting on mouse move ──
-  const handleMouseMove = useCallback(
-    (e: MouseEvent) => {
+  // Detect touch device once
+  const isTouchDevice = useMemo(
+    () => typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0),
+    [],
+  );
+
+  // ── Element highlighting on pointer move (desktop hover) ──
+  const handlePointerMove = useCallback(
+    (e: PointerEvent) => {
       if (!active || showForm) return;
+      // Only highlight on mouse hover, not touch drag
+      if (e.pointerType === 'touch') return;
       const target = e.target as HTMLElement;
       if (target.closest('[data-review-mode]')) return;
       setHoveredEl(target);
@@ -69,17 +79,42 @@ export function ReviewMode({
     [active, showForm],
   );
 
-  // ── Click to capture ──
-  const handleClick = useCallback(
-    async (e: MouseEvent) => {
+  // ── Pointer down: highlight element (works for both mouse and touch) ──
+  const handlePointerDown = useCallback(
+    (e: PointerEvent) => {
       if (!active || showForm) return;
       const target = e.target as HTMLElement;
       if (target.closest('[data-review-mode]')) return;
+      // On touch: show highlight on tap-down (replaces hover)
+      if (e.pointerType === 'touch') {
+        setHoveredEl(target);
+        setHighlightRect(target.getBoundingClientRect());
+      }
+      pointerDownTargetRef.current = target;
+    },
+    [active, showForm],
+  );
+
+  // ── Pointer up: confirm selection and open form ──
+  const handlePointerUp = useCallback(
+    async (e: PointerEvent) => {
+      if (!active || showForm) return;
+      const target = e.target as HTMLElement;
+      if (target.closest('[data-review-mode]')) return;
+
+      // Only capture if pointer up is on the same element as pointer down
+      if (pointerDownTargetRef.current && pointerDownTargetRef.current !== target) {
+        pointerDownTargetRef.current = null;
+        setHighlightRect(null);
+        return;
+      }
+
       e.preventDefault();
       e.stopPropagation();
 
       setHighlightRect(null);
       setShowForm(true);
+      setScreenshotFailed(false);
 
       // Capture screenshot
       try {
@@ -91,7 +126,7 @@ export function ReviewMode({
           setScreenshotPreview(url);
         }
       } catch {
-        // Screenshot capture is optional
+        setScreenshotFailed(true);
       }
     },
     [active, showForm, captureSelector],
@@ -112,16 +147,18 @@ export function ReviewMode({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [active, showForm, onDeactivate]);
 
-  // ── Mouse listeners ──
+  // ── Pointer listeners (unified mouse + touch + pen) ──
   useEffect(() => {
     if (!active) return;
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('click', handleClick, true);
+    document.addEventListener('pointermove', handlePointerMove);
+    document.addEventListener('pointerdown', handlePointerDown, true);
+    document.addEventListener('pointerup', handlePointerUp, true);
     return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('click', handleClick, true);
+      document.removeEventListener('pointermove', handlePointerMove);
+      document.removeEventListener('pointerdown', handlePointerDown, true);
+      document.removeEventListener('pointerup', handlePointerUp, true);
     };
-  }, [active, handleMouseMove, handleClick]);
+  }, [active, handlePointerMove, handlePointerDown, handlePointerUp]);
 
   function resetForm() {
     setShowForm(false);
@@ -129,6 +166,7 @@ export function ReviewMode({
     setFeedbackType(types[0]);
     setPriority('medium');
     setScreenshotBlob(null);
+    setScreenshotFailed(false);
     if (screenshotPreview) {
       URL.revokeObjectURL(screenshotPreview);
       setScreenshotPreview(null);
@@ -213,7 +251,7 @@ export function ReviewMode({
             top: 0,
             right: 0,
             width: 'min(380px, 100vw)',
-            height: '100vh',
+            height: '100dvh',
             background: t.surface,
             borderLeft: `1px solid ${t.border}`,
             zIndex: 99999,
@@ -221,7 +259,8 @@ export function ReviewMode({
             flexDirection: 'column',
             color: t.text,
             fontFamily: t.fontFamily,
-            fontSize: '14px',
+            fontSize: '16px',
+            paddingBottom: 'env(safe-area-inset-bottom, 0px)',
             // Inject CSS custom properties so @gundo/ui components resolve tokens correctly
             '--ui-surface': '#292E37',
             '--ui-surface-hover': 'rgba(255,255,255,0.07)',
@@ -237,14 +276,21 @@ export function ReviewMode({
           {/* Header */}
           <div style={{ padding: '16px 20px', borderBottom: `1px solid ${t.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontWeight: 600, fontSize: '16px' }}>Nuevo Feedback</span>
-            <Button variant="ghost" size="sm" onClick={resetForm}>✕</Button>
+            <Button variant="ghost" size="md" onClick={resetForm} className="min-h-[44px]">✕</Button>
           </div>
 
-          <div style={{ flex: 1, overflow: 'auto', padding: '20px' }}>
+          <div style={{ flex: 1, overflow: 'auto', padding: '20px', WebkitOverflowScrolling: 'touch' }}>
             {/* Screenshot preview */}
             {screenshotPreview && (
               <div style={{ marginBottom: '16px' }}>
                 <img src={screenshotPreview} alt="Captura" style={{ width: '100%', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)' }} />
+              </div>
+            )}
+
+            {/* Screenshot capture failed notice */}
+            {screenshotFailed && !screenshotPreview && (
+              <div style={{ marginBottom: '16px', padding: '8px 12px', background: 'rgba(234,179,8,0.1)', border: '1px solid rgba(234,179,8,0.3)', borderRadius: '6px', fontSize: '13px', color: '#eab308' }}>
+                Captura no disponible
               </div>
             )}
 
@@ -276,13 +322,13 @@ export function ReviewMode({
                     key={t}
                     onClick={() => setFeedbackType(t)}
                     style={{
-                      padding: '6px 14px',
+                      padding: '10px 16px',
                       borderRadius: '6px',
                       border: feedbackType === t ? '1px solid #3b82f6' : '1px solid rgba(255,255,255,0.1)',
                       background: feedbackType === t ? 'rgba(59,130,246,0.15)' : 'rgba(255,255,255,0.05)',
                       color: feedbackType === t ? '#60a5fa' : '#9ca3af',
                       cursor: 'pointer',
-                      fontSize: '13px',
+                      fontSize: '14px',
                     }}
                   >
                     {TYPE_LABELS[t] || t}
@@ -300,13 +346,13 @@ export function ReviewMode({
                     key={p}
                     onClick={() => setPriority(p)}
                     style={{
-                      padding: '6px 12px',
+                      padding: '10px 14px',
                       borderRadius: '6px',
                       border: priority === p ? `1px solid ${PRIORITY_COLORS[p]}` : '1px solid rgba(255,255,255,0.1)',
                       background: priority === p ? `${PRIORITY_COLORS[p]}20` : 'rgba(255,255,255,0.05)',
                       color: priority === p ? PRIORITY_COLORS[p] : '#9ca3af',
                       cursor: 'pointer',
-                      fontSize: '12px',
+                      fontSize: '13px',
                       textTransform: 'capitalize',
                     }}
                   >
@@ -338,7 +384,7 @@ export function ReviewMode({
           data-review-mode
           style={{
             position: 'fixed',
-            bottom: '24px',
+            bottom: 'calc(24px + env(safe-area-inset-bottom, 0px))',
             left: '50%',
             transform: 'translateX(-50%)',
             padding: '12px 24px',
@@ -355,14 +401,17 @@ export function ReviewMode({
         </div>
       )}
 
-      {/* Cursor hint */}
+      {/* Cursor hint + exit button */}
       {!showForm && (
         <div
           data-review-mode
           style={{
             position: 'fixed',
-            bottom: '24px',
-            right: '24px',
+            bottom: 'calc(24px + env(safe-area-inset-bottom, 0px))',
+            right: 'max(24px, env(safe-area-inset-right, 0px))',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
             padding: '8px 16px',
             borderRadius: '8px',
             background: 'rgba(59,130,246,0.9)',
@@ -372,7 +421,23 @@ export function ReviewMode({
             backdropFilter: 'blur(4px)',
           }}
         >
-          Click en cualquier elemento · <kbd style={{ opacity: 0.7 }}>Esc</kbd> para salir
+          <span>{isTouchDevice ? 'Toca cualquier elemento' : 'Click en cualquier elemento'}</span>
+          <button
+            data-review-mode
+            onClick={onDeactivate}
+            style={{
+              background: 'rgba(255,255,255,0.2)',
+              border: 'none',
+              color: '#fff',
+              padding: '10px 16px',
+              borderRadius: '6px',
+              fontSize: '13px',
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            ✕ Salir
+          </button>
         </div>
       )}
     </>

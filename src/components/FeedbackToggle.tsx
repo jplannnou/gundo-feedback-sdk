@@ -15,10 +15,10 @@ interface FeedbackToggleProps {
 }
 
 const POSITIONS: Record<string, CSSProperties> = {
-  'bottom-right': { bottom: '72px', right: '24px' },
-  'bottom-left': { bottom: '72px', left: '24px' },
-  'top-right': { top: '24px', right: '24px' },
-  'top-left': { top: '24px', left: '24px' },
+  'bottom-right': { bottom: 'calc(72px + env(safe-area-inset-bottom, 0px))', right: 'max(24px, env(safe-area-inset-right, 0px))' },
+  'bottom-left': { bottom: 'calc(72px + env(safe-area-inset-bottom, 0px))', left: 'max(24px, env(safe-area-inset-left, 0px))' },
+  'top-right': { top: 'max(24px, env(safe-area-inset-top, 0px))', right: 'max(24px, env(safe-area-inset-right, 0px))' },
+  'top-left': { top: 'max(24px, env(safe-area-inset-top, 0px))', left: 'max(24px, env(safe-area-inset-left, 0px))' },
 };
 
 export function FeedbackToggle({
@@ -40,7 +40,7 @@ export function FeedbackToggle({
         display: 'flex',
         alignItems: 'center',
         gap: '8px',
-        padding: '10px 18px',
+        padding: '12px 20px',
         borderRadius: t.radiusXl,
         border: active ? `2px solid ${t.warning}` : `1px solid ${t.border}`,
         background: active ? 'rgba(234,179,8,0.15)' : t.surface,
@@ -54,7 +54,7 @@ export function FeedbackToggle({
         fontFamily: t.fontFamily,
       }}
     >
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
       </svg>
       {label || (active ? 'Salir Revisión' : 'Feedback')}

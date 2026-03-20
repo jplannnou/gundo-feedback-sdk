@@ -73,15 +73,17 @@ export function CommentThread({ comments, onAddComment, locale = 'en' }: Comment
             disabled={isSubmitting}
           />
         </div>
-        <Button
-          variant="primary"
-          size="sm"
-          onClick={handleSubmit}
-          disabled={!content.trim() || isSubmitting}
-          loading={isSubmitting}
-        >
-          {locale === 'es' ? 'Enviar' : 'Send'}
-        </Button>
+        <div style={{ flexShrink: 0 }}>
+          <Button
+            variant="primary"
+            size="md"
+            onClick={handleSubmit}
+            disabled={!content.trim() || isSubmitting}
+            loading={isSubmitting}
+          >
+            {locale === 'es' ? 'Enviar' : 'Send'}
+          </Button>
+        </div>
       </div>
     </div>
   );

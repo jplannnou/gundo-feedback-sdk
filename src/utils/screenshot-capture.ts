@@ -8,7 +8,7 @@ export async function captureElementScreenshot(element: HTMLElement): Promise<Bl
   const mod = await import('html2canvas' as any);
   const html2canvas = mod.default || mod;
   const canvas = await html2canvas(element, {
-    scale: 2,
+    scale: Math.min(window.devicePixelRatio || 1, 2),
     backgroundColor: '#1a1a2e',
     useCORS: true,
     logging: false,
@@ -40,7 +40,7 @@ export async function captureAreaScreenshot(
   const html2canvas = mod.default || mod;
   const rect = imageElement.getBoundingClientRect();
   const canvas = await html2canvas(imageElement, {
-    scale: 2,
+    scale: Math.min(window.devicePixelRatio || 1, 2),
     x: rect.width * boundingBox.x,
     y: rect.height * boundingBox.y,
     width: rect.width * boundingBox.width,
