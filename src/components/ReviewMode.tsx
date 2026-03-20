@@ -3,7 +3,7 @@ import { useFeedbackContext } from '../FeedbackProvider';
 import type { FeedbackPriority, FeedbackType } from '../types';
 import { captureElementScreenshot } from '../utils/screenshot-capture';
 import { theme as t } from '../utils/theme';
-import { Button } from '@gundo/ui';
+import { Button, Textarea } from '@gundo/ui';
 
 interface ReviewModeProps {
   /** Whether review mode is active */
@@ -258,26 +258,12 @@ export function ReviewMode({
               <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', color: t.textSecondary, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                 Descripción *
               </label>
-              <textarea
+              <Textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Describe el problema o sugerencia..."
                 rows={4}
                 autoFocus
-                style={{
-                  width: '100%',
-                  padding: '8px 12px',
-                  borderRadius: '8px',
-                  border: `1px solid ${t.border}`,
-                  background: t.surfaceHover,
-                  color: t.text,
-                  fontSize: '14px',
-                  fontFamily: t.fontFamily,
-                  resize: 'none',
-                  outline: 'none',
-                }}
-                onFocus={(e) => { e.currentTarget.style.borderColor = '#67C728'; }}
-                onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; }}
               />
             </div>
 
