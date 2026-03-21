@@ -41,7 +41,7 @@ export function ReviewMode({
   types = DEFAULT_TYPES,
   captureSelector = 'main',
 }: ReviewModeProps) {
-  const { client } = useFeedbackContext();
+  const { client, contextCollector } = useFeedbackContext();
 
   const [, setHoveredEl] = useState<HTMLElement | null>(null);
   const [highlightRect, setHighlightRect] = useState<DOMRect | null>(null);
@@ -173,6 +173,20 @@ export function ReviewMode({
     }
   }
 
+  function detectSection(): string {
+    // 1. Try h1 heading on the page
+    const h1 = document.querySelector('h1');
+    if (h1?.textContent?.trim()) return h1.textContent.trim();
+    // 2. Try meaningful route segment
+    const path = window.location.pathname;
+    if (path && path !== '/') {
+      const segment = path.split('/').filter(Boolean).pop();
+      if (segment) return segment.replace(/-/g, ' ');
+    }
+    // 3. Fallback to prop
+    return currentSection;
+  }
+
   async function handleSubmit() {
     if (!description.trim() || isSubmitting) return;
     setIsSubmitting(true);
@@ -184,19 +198,24 @@ export function ReviewMode({
         screenshotUrl = result.url;
       }
 
+      const section = detectSection();
+      const collectedCtx = contextCollector.collect();
+
       await client.submitFeedback({
         items: [
           {
             comment: description.trim(),
             feedbackType,
             priority,
-            module: currentSection,
+            module: section,
+            sectionHeading: section,
             screenshotUrl,
             context: {
+              ...collectedCtx,
               url: window.location.href,
               viewport: `${window.innerWidth}x${window.innerHeight}`,
               userAgent: navigator.userAgent,
-              section: currentSection,
+              section,
               timestamp: new Date().toISOString(),
             },
           },

@@ -42,7 +42,7 @@ export function useFeedbackSubmit(): UseFeedbackSubmitReturn {
         setIsSubmitting(false);
       }
     },
-    [client],
+    [client, contextCollector],
   );
 
   return { submit, isSubmitting, error, lastSessionId };
