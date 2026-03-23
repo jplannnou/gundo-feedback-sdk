@@ -202,6 +202,10 @@ export interface CreateFeedbackItemInput {
   entityType?: string;
   screenshotUrl?: string;
   context?: Record<string, unknown>;
+  /** User who reported this feedback (email) */
+  reportedBy?: string;
+  /** Display name of the reporter */
+  reportedByName?: string;
 }
 
 export interface SubmitFeedbackInput {

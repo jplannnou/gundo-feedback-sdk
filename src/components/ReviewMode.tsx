@@ -41,7 +41,7 @@ export function ReviewMode({
   types = DEFAULT_TYPES,
   captureSelector = 'main',
 }: ReviewModeProps) {
-  const { config, client, contextCollector } = useFeedbackContext();
+  const { config, client, user, contextCollector } = useFeedbackContext();
 
   const [, setHoveredEl] = useState<HTMLElement | null>(null);
   const [highlightRect, setHighlightRect] = useState<DOMRect | null>(null);
@@ -199,8 +199,18 @@ export function ReviewMode({
     try {
       let screenshotUrl: string | undefined;
       if (screenshotBlob) {
-        const result = await client.uploadScreenshot(screenshotBlob);
-        screenshotUrl = result.url;
+        try {
+          const result = await client.uploadScreenshot(screenshotBlob);
+          if (result?.url) {
+            screenshotUrl = result.url;
+          } else {
+            console.warn('[feedback-sdk] Screenshot upload returned no URL');
+            setScreenshotFailed(true);
+          }
+        } catch (err) {
+          console.warn('[feedback-sdk] Screenshot upload failed:', err);
+          setScreenshotFailed(true);
+        }
       }
 
       const collectedCtx = contextCollector.collect();
@@ -220,6 +230,8 @@ export function ReviewMode({
             module: detectedSection,
             sectionHeading: detectedSection,
             screenshotUrl,
+            reportedBy: user?.email,
+            reportedByName: user?.name,
             context: {
               ...collectedCtx,
               section: detectedSection,

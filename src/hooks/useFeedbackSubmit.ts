@@ -10,7 +10,7 @@ export interface UseFeedbackSubmitReturn {
 }
 
 export function useFeedbackSubmit(): UseFeedbackSubmitReturn {
-  const { client, contextCollector } = useFeedbackContext();
+  const { client, user, contextCollector } = useFeedbackContext();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const [lastSessionId, setLastSessionId] = useState<number | null>(null);
@@ -26,6 +26,8 @@ export function useFeedbackSubmit(): UseFeedbackSubmitReturn {
           ...data,
           items: data.items.map((item) => ({
             ...item,
+            reportedBy: item.reportedBy ?? user?.email,
+            reportedByName: item.reportedByName ?? user?.name,
             context: {
               ...collectedCtx,
               ...item.context, // user-provided context takes precedence

@@ -357,9 +357,11 @@ export class ContextCollector {
     for (const level of levels) {
       originals[level] = console[level];
       console[level] = (...args: unknown[]) => {
-        const message = args.map((a) =>
-          typeof a === 'string' ? a : a instanceof Error ? a.message : String(a)
-        ).join(' ').slice(0, 300);
+        const message = args.map((a) => {
+          if (typeof a === 'string') return a;
+          if (a instanceof Error) return a.message;
+          try { return JSON.stringify(a); } catch { return String(a); }
+        }).join(' ').slice(0, 300);
 
         let stack: string | undefined;
         if (level === 'error' || level === 'warn') {
