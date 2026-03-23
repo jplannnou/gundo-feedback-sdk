@@ -33,7 +33,7 @@ const PRIORITY_COLORS: Record<string, string> = {
   low: 'var(--ui-success, #22c55e)',
 };
 
-export function FeedbackItemCard({ item, onClick, locale = 'en' }: FeedbackItemCardProps) {
+export function FeedbackItemCard({ item, onClick, locale = 'es' }: FeedbackItemCardProps) {
   const typeBadge = TYPE_BADGE[item.feedbackType] || TYPE_BADGE.general;
   const statusColor = STATUS_COLORS[item.status] || 'var(--ui-text-muted, #6b7280)';
   const priorityColor = PRIORITY_COLORS[item.priority] || 'var(--ui-warning, #eab308)';

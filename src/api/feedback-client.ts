@@ -138,7 +138,8 @@ export class FeedbackClient {
     });
 
     if (!res.ok) {
-      throw new FeedbackApiError(res.status, 'Screenshot upload failed');
+      const body = await res.json().catch(() => ({}));
+      throw new FeedbackApiError(res.status, body.message || 'Screenshot upload failed', body);
     }
 
     return res.json();

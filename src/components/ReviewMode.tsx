@@ -55,9 +55,24 @@ export function ReviewMode({
   const [priority, setPriority] = useState<FeedbackPriority>('medium');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [detectedSection, setDetectedSection] = useState(currentSection);
 
   const formRef = useRef<HTMLDivElement>(null);
   const pointerDownTargetRef = useRef<HTMLElement | null>(null);
+
+  function detectSection(): string {
+    // 1. Try h1 heading on the page
+    const h1 = document.querySelector('h1');
+    if (h1?.textContent?.trim()) return h1.textContent.trim();
+    // 2. Try meaningful route segment
+    const path = window.location.pathname;
+    if (path && path !== '/') {
+      const segment = path.split('/').filter(Boolean).pop();
+      if (segment) return segment.replace(/-/g, ' ');
+    }
+    // 3. Fallback to prop
+    return currentSection;
+  }
 
   // Detect touch device once
   const isTouchDevice = useMemo(
@@ -113,10 +128,10 @@ export function ReviewMode({
       e.stopPropagation();
 
       setHighlightRect(null);
-      setShowForm(true);
+      setDetectedSection(detectSection());
       setScreenshotFailed(false);
 
-      // Capture screenshot
+      // Capture screenshot BEFORE showing form to avoid layout interference
       try {
         const captureEl = document.querySelector(captureSelector) as HTMLElement;
         if (captureEl) {
@@ -124,10 +139,14 @@ export function ReviewMode({
           setScreenshotBlob(blob);
           const url = URL.createObjectURL(blob);
           setScreenshotPreview(url);
+        } else {
+          setScreenshotFailed(true);
         }
       } catch {
         setScreenshotFailed(true);
       }
+
+      setShowForm(true);
     },
     [active, showForm, captureSelector],
   );
@@ -173,20 +192,6 @@ export function ReviewMode({
     }
   }
 
-  function detectSection(): string {
-    // 1. Try h1 heading on the page
-    const h1 = document.querySelector('h1');
-    if (h1?.textContent?.trim()) return h1.textContent.trim();
-    // 2. Try meaningful route segment
-    const path = window.location.pathname;
-    if (path && path !== '/') {
-      const segment = path.split('/').filter(Boolean).pop();
-      if (segment) return segment.replace(/-/g, ' ');
-    }
-    // 3. Fallback to prop
-    return currentSection;
-  }
-
   async function handleSubmit() {
     if (!description.trim() || isSubmitting) return;
     setIsSubmitting(true);
@@ -198,25 +203,25 @@ export function ReviewMode({
         screenshotUrl = result.url;
       }
 
-      const section = detectSection();
       const collectedCtx = contextCollector.collect();
+
+      // Auto-generate title from first line of description (max 80 chars)
+      const firstLine = description.trim().split('\n')[0];
+      const title = firstLine.length > 80 ? `${firstLine.slice(0, 77)}...` : firstLine;
 
       await client.submitFeedback({
         items: [
           {
             comment: description.trim(),
+            title,
             feedbackType,
             priority,
-            module: section,
-            sectionHeading: section,
+            module: detectedSection,
+            sectionHeading: detectedSection,
             screenshotUrl,
             context: {
               ...collectedCtx,
-              url: window.location.href,
-              viewport: `${window.innerWidth}x${window.innerHeight}`,
-              userAgent: navigator.userAgent,
-              section,
-              timestamp: new Date().toISOString(),
+              section: detectedSection,
             },
           },
         ],
@@ -315,7 +320,7 @@ export function ReviewMode({
 
             {/* Section/Module */}
             <div style={{ marginBottom: '16px', padding: '8px 12px', background: 'rgba(255,255,255,0.05)', borderRadius: '6px', fontSize: '12px', color: t.textSecondary }}>
-              Sección: <span style={{ color: t.text }}>{currentSection}</span>
+              Sección: <span style={{ color: t.text }}>{detectedSection}</span>
             </div>
 
             {/* Description */}

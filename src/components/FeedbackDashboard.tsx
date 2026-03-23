@@ -119,15 +119,21 @@ const [searchQuery, setSearchQuery] = useState<string>('');
     try {
       const detail = await client.getFeedback(item.id);
       setSelectedItem(detail);
+    } catch {
+      // Close loading state on error so user can try again
     } finally {
       setIsLoadingDetail(false);
     }
   }
 
   async function updateStatus(id: number, status: FeedbackStatus, resolution?: string) {
-    await client.updateFeedback(id, { status, resolution });
-    setSelectedItem(null);
-    fetchFeedback();
+    try {
+      await client.updateFeedback(id, { status, resolution });
+      setSelectedItem(null);
+      fetchFeedback();
+    } catch {
+      // Silently fail — modal stays open so user can retry
+    }
   }
 
   async function handleCreate() {
@@ -439,11 +445,15 @@ const [searchQuery, setSearchQuery] = useState<string>('');
               <CommentThread
                 comments={selectedItem.comments || []}
                 onAddComment={async (content) => {
-                  const comment = await client.addComment(selectedItem.id, content);
-                  setSelectedItem({
-                    ...selectedItem,
-                    comments: [...(selectedItem.comments || []), comment],
-                  });
+                  try {
+                    const comment = await client.addComment(selectedItem.id, content);
+                    setSelectedItem({
+                      ...selectedItem,
+                      comments: [...(selectedItem.comments || []), comment],
+                    });
+                  } catch {
+                    // Silently fail — comment input stays so user can retry
+                  }
                 }}
                 locale={locale}
               />

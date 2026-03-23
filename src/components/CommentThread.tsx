@@ -9,7 +9,7 @@ interface CommentThreadProps {
   locale?: 'es' | 'en';
 }
 
-export function CommentThread({ comments, onAddComment, locale = 'en' }: CommentThreadProps) {
+export function CommentThread({ comments, onAddComment, locale = 'es' }: CommentThreadProps) {
   const [content, setContent] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 

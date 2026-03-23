@@ -90,8 +90,12 @@ export function AssignmentRulesPanel({ modules = [], locale = 'es' }: Assignment
   }
 
   async function handleToggle(rule: AssignmentRule) {
-    await client.updateAssignmentRule(rule.id, { active: !rule.active });
-    fetchRules();
+    try {
+      await client.updateAssignmentRule(rule.id, { active: !rule.active });
+      fetchRules();
+    } catch {
+      // Silently fail — rule list stays as-is
+    }
   }
 
   async function handleDelete(rule: AssignmentRule) {
@@ -99,8 +103,12 @@ export function AssignmentRulesPanel({ modules = [], locale = 'es' }: Assignment
       ? `¿Eliminar regla para ${rule.assignTo}?`
       : `Delete rule for ${rule.assignTo}?`;
     if (!confirm(msg)) return;
-    await client.deleteAssignmentRule(rule.id);
-    fetchRules();
+    try {
+      await client.deleteAssignmentRule(rule.id);
+      fetchRules();
+    } catch {
+      // Silently fail — rule list stays as-is
+    }
   }
 
   if (isLoading) {
