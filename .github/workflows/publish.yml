@@ -100,6 +100,9 @@ jobs:
           - repo: Gundo-Health-and-Food/gundo-website-ui
             pkg_dir: .
             direct_push: false
+          - repo: Gundo-Health-and-Food/gundo-internal-dashboard-ui
+            pkg_dir: .
+            direct_push: false
     env:
       VERSION: ${{ needs.publish.outputs.version }}
       NODE_AUTH_TOKEN: ${{ secrets.SDK_PROPAGATE_TOKEN }}
