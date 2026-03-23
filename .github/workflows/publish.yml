@@ -68,6 +68,8 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   # ── Auto-propagate to all consumer repos ──────────────────────────
+  # Checks out each consumer, runs `pnpm add` to update package.json + lockfile,
+  # then pushes directly (JP repos) or creates a PR (external repos).
   propagate:
     needs: publish
     runs-on: ubuntu-latest
@@ -75,98 +77,100 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # JP's repos (jplannnou org)
+          # JP's repos → push directo a main
           - repo: jplannnou/Gundo_Engine
             pkg_dir: frontend
+            direct_push: true
           - repo: jplannnou/Gundo_Finance
             pkg_dir: frontend
+            direct_push: true
           - repo: jplannnou/Gundo_Radar
             pkg_dir: client
+            direct_push: true
           - repo: jplannnou/jp-assistant
             pkg_dir: frontend
+            direct_push: true
           - repo: jplannnou/gundo-feedback
             pkg_dir: frontend
-          # Gundo org repos
+            direct_push: true
+          # External repos → PR with lockfile
           - repo: Gundo-Health-and-Food/gundo-admin-fitness-ui
             pkg_dir: .
+            direct_push: false
           - repo: Gundo-Health-and-Food/gundo-website-ui
             pkg_dir: .
+            direct_push: false
+    env:
+      VERSION: ${{ needs.publish.outputs.version }}
+      NODE_AUTH_TOKEN: ${{ secrets.SDK_PROPAGATE_TOKEN }}
     steps:
-      - name: Update SDK in ${{ matrix.repo }}
-        uses: actions/github-script@v7
+      - name: Checkout ${{ matrix.repo }}
+        uses: actions/checkout@v5
         with:
-          github-token: ${{ secrets.SDK_PROPAGATE_TOKEN }}
-          script: |
-            const version = '${{ needs.publish.outputs.version }}';
-            const [owner, repo] = '${{ matrix.repo }}'.split('/');
-            const pkgDir = '${{ matrix.pkg_dir }}';
-            const branch = `chore/update-feedback-sdk-${version}`;
-            const pkgPath = pkgDir === '.' ? 'package.json' : `${pkgDir}/package.json`;
+          repository: ${{ matrix.repo }}
+          token: ${{ secrets.SDK_PROPAGATE_TOKEN }}
 
-            // 1. Get default branch
-            const { data: repoData } = await github.rest.repos.get({ owner, repo });
-            const defaultBranch = repoData.default_branch;
+      - uses: pnpm/action-setup@v5
+        with:
+          version: '10.30.1'
 
-            // 2. Get current package.json
-            let fileData;
-            try {
-              fileData = await github.rest.repos.getContent({ owner, repo, path: pkgPath, ref: defaultBranch });
-            } catch (e) {
-              console.log(`⚠️ ${pkgPath} not found in ${owner}/${repo}, skipping`);
-              return;
-            }
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          registry-url: https://npm.pkg.github.com
 
-            const content = Buffer.from(fileData.data.content, 'base64').toString();
-            const pkg = JSON.parse(content);
+      - name: 'Check if SDK is used (skip file: protocol)'
+        id: check
+        run: |
+          PKG="${{ matrix.pkg_dir }}/package.json"
+          if [ "${{ matrix.pkg_dir }}" = "." ]; then PKG="package.json"; fi
+          if ! grep -q 'feedback-sdk' "$PKG" 2>/dev/null; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "⚠️ feedback-sdk not found in $PKG"
+          elif grep -q '"file:' "$PKG" 2>/dev/null && grep -A1 'feedback-sdk' "$PKG" | grep -q 'file:'; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "⚠️ Uses file: protocol, skipping"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
 
-            // 3. Check if SDK is a dependency
-            const deps = pkg.dependencies || {};
-            const sdkKey = Object.keys(deps).find(k => k.includes('feedback-sdk'));
-            if (!sdkKey) {
-              console.log(`⚠️ feedback-sdk not found in ${owner}/${repo} dependencies, skipping`);
-              return;
-            }
+      - name: Update SDK to v${{ env.VERSION }}
+        if: steps.check.outputs.skip != 'true'
+        working-directory: ${{ matrix.pkg_dir }}
+        run: pnpm add "@gundo/feedback-sdk@npm:@jplannnou/feedback-sdk@^${VERSION}"
 
-            // 4. Update specifier to ^newVersion
-            const currentSpec = deps[sdkKey];
-            // Handle both "npm:@jplannnou/feedback-sdk@^X.Y.Z" and "file:..." patterns
-            if (currentSpec.startsWith('file:')) {
-              console.log(`⚠️ ${owner}/${repo} uses file: protocol, skipping`);
-              return;
-            }
-            const newSpec = `npm:@jplannnou/feedback-sdk@^${version}`;
-            if (currentSpec === newSpec) {
-              console.log(`✅ ${owner}/${repo} already on ^${version}`);
-              return;
-            }
+      - name: Check for changes
+        if: steps.check.outputs.skip != 'true'
+        id: changes
+        run: |
+          if git diff --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "✅ Already up to date"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
 
-            deps[sdkKey] = newSpec;
-            const updatedContent = JSON.stringify(pkg, null, 2) + '\n';
+      - name: Push to main
+        if: steps.changes.outputs.changed == 'true' && matrix.direct_push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add pnpm-lock.yaml "${{ matrix.pkg_dir }}/package.json"
+          git commit -m "chore: update feedback-sdk to v${VERSION} (auto-propagate)"
+          git push
 
-            // 5. Create branch from default
-            const { data: ref } = await github.rest.git.getRef({ owner, repo, ref: `heads/${defaultBranch}` });
-            try {
-              await github.rest.git.createRef({ owner, repo, ref: `refs/heads/${branch}`, sha: ref.object.sha });
-            } catch (e) {
-              console.log(`⚠️ Branch ${branch} already exists in ${owner}/${repo}, skipping`);
-              return;
-            }
-
-            // 6. Update package.json on branch
-            await github.rest.repos.createOrUpdateFileContents({
-              owner, repo, path: pkgPath, branch,
-              message: `chore: update @gundo/feedback-sdk to ^${version}`,
-              content: Buffer.from(updatedContent).toString('base64'),
-              sha: fileData.data.sha,
-            });
-
-            // 7. Create PR
-            const { data: pr } = await github.rest.pulls.create({
-              owner, repo,
-              title: `chore: update @gundo/feedback-sdk to ^${version}`,
-              head: branch,
-              base: defaultBranch,
-              body: `## Auto-update\n\nBumps \`@gundo/feedback-sdk\` to \`^${version}\`.\n\nTriggered by [v${version} publish](https://github.com/jplannnou/gundo-feedback-sdk/releases/tag/v${version}).\n\n> Run \`pnpm install\` after merge to update lockfile.\n\n🤖 Generated automatically by SDK publish workflow`,
-            });
-
-            console.log(`✅ PR created: ${pr.html_url}`);
+      - name: Create PR
+        if: steps.changes.outputs.changed == 'true' && !matrix.direct_push
+        env:
+          GH_TOKEN: ${{ secrets.SDK_PROPAGATE_TOKEN }}
+        run: |
+          BRANCH="chore/update-feedback-sdk-${VERSION}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH"
+          git add pnpm-lock.yaml "${{ matrix.pkg_dir }}/package.json"
+          git commit -m "chore: update feedback-sdk to v${VERSION}"
+          git push -u origin "$BRANCH"
+          gh pr create \
+            --title "chore: update @gundo/feedback-sdk to ^${VERSION}" \
+            --body "Bumps feedback-sdk to ^${VERSION} with updated lockfile. Triggered by [v${VERSION} publish](https://github.com/jplannnou/gundo-feedback-sdk/releases/tag/v${VERSION})."
