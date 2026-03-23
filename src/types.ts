@@ -205,6 +205,8 @@ export interface CreateFeedbackItemInput {
 }
 
 export interface SubmitFeedbackInput {
+  /** Project identifier — sent in body so Firebase-auth consumers get proper project attribution */
+  project?: string;
   items: CreateFeedbackItemInput[];
   entityId?: string;
   search?: string;

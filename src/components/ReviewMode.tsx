@@ -41,7 +41,7 @@ export function ReviewMode({
   types = DEFAULT_TYPES,
   captureSelector = 'main',
 }: ReviewModeProps) {
-  const { client, contextCollector } = useFeedbackContext();
+  const { config, client, contextCollector } = useFeedbackContext();
 
   const [, setHoveredEl] = useState<HTMLElement | null>(null);
   const [highlightRect, setHighlightRect] = useState<DOMRect | null>(null);
@@ -210,6 +210,7 @@ export function ReviewMode({
       const title = firstLine.length > 80 ? `${firstLine.slice(0, 77)}...` : firstLine;
 
       await client.submitFeedback({
+        project: config.project,
         items: [
           {
             comment: description.trim(),
