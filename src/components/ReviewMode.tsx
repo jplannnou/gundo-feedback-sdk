@@ -407,7 +407,7 @@ export function ReviewMode({
               onClick={handleSubmit}
               disabled={!description.trim() || isSubmitting}
               loading={isSubmitting}
-              className="w-full"
+              style={{ width: '100%' }}
             >
               {isSubmitting ? 'Enviando...' : 'Enviar Feedback'}
             </Button>
