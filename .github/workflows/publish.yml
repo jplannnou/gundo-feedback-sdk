@@ -114,8 +114,6 @@ jobs:
           token: ${{ secrets.SDK_PROPAGATE_TOKEN }}
 
       - uses: pnpm/action-setup@v5
-        with:
-          version: '10.30.1'
 
       - uses: actions/setup-node@v6
         with:
