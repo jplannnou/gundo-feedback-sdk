@@ -131,9 +131,9 @@ jobs:
           if ! grep -q 'feedback-sdk' "$PKG" 2>/dev/null; then
             echo "skip=true" >> "$GITHUB_OUTPUT"
             echo "⚠️ feedback-sdk not found in $PKG"
-          elif grep -q '"file:' "$PKG" 2>/dev/null && grep -A1 'feedback-sdk' "$PKG" | grep -q 'file:'; then
+          elif grep 'feedback-sdk' "$PKG" | grep -q '"file:'; then
             echo "skip=true" >> "$GITHUB_OUTPUT"
-            echo "⚠️ Uses file: protocol, skipping"
+            echo "⚠️ feedback-sdk uses file: protocol, skipping"
           else
             echo "skip=false" >> "$GITHUB_OUTPUT"
           fi
