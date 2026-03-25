@@ -3,7 +3,8 @@ import { useFeedbackContext } from '../FeedbackProvider';
 import type { FeedbackPriority, FeedbackType } from '../types';
 import { captureElementScreenshot } from '../utils/screenshot-capture';
 import { theme as t } from '../utils/theme';
-import { Button, Textarea } from '@gundo/ui';
+// NOTE: SDK uses inline styles instead of @gundo/ui components to avoid
+// dependency on consumer's Tailwind CSS generating the required utility classes.
 
 interface ReviewModeProps {
   /** Whether review mode is active */
@@ -313,7 +314,22 @@ export function ReviewMode({
           {/* Header */}
           <div style={{ padding: '16px 20px', borderBottom: `1px solid ${t.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontWeight: 600, fontSize: '16px' }}>Nuevo Feedback</span>
-            <Button variant="ghost" size="md" onClick={resetForm} className="min-h-[44px]">✕</Button>
+            <button
+              onClick={resetForm}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: t.textSecondary,
+                cursor: 'pointer',
+                fontSize: '18px',
+                padding: '8px 12px',
+                minHeight: '44px',
+                borderRadius: '8px',
+                transition: 'background 0.15s',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+            >✕</button>
           </div>
 
           <div style={{ flex: 1, overflow: 'auto', padding: '20px', WebkitOverflowScrolling: 'touch' }}>
@@ -341,12 +357,28 @@ export function ReviewMode({
               <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', color: t.textSecondary, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                 Descripción *
               </label>
-              <Textarea
+              <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Describe el problema o sugerencia..."
                 rows={4}
                 autoFocus
+                style={{
+                  width: '100%',
+                  padding: '10px 12px',
+                  background: 'rgba(0,0,0,0.2)',
+                  border: `1px solid ${t.border}`,
+                  borderRadius: '8px',
+                  color: t.text,
+                  fontSize: '14px',
+                  fontFamily: 'inherit',
+                  resize: 'vertical',
+                  outline: 'none',
+                  transition: 'border-color 0.15s',
+                  boxSizing: 'border-box',
+                }}
+                onFocus={(e) => { e.currentTarget.style.borderColor = '#67C728'; }}
+                onBlur={(e) => { e.currentTarget.style.borderColor = t.border; }}
               />
             </div>
 
@@ -402,15 +434,35 @@ export function ReviewMode({
 
           {/* Submit button */}
           <div style={{ padding: '16px 20px', borderTop: `1px solid ${t.border}` }}>
-            <Button
-              variant="primary"
+            <button
               onClick={handleSubmit}
               disabled={!description.trim() || isSubmitting}
-              loading={isSubmitting}
-              style={{ width: '100%' }}
+              style={{
+                width: '100%',
+                padding: '10px 16px',
+                background: !description.trim() || isSubmitting ? 'rgba(103,199,40,0.4)' : '#67C728',
+                color: '#292E37',
+                border: 'none',
+                borderRadius: '8px',
+                fontSize: '14px',
+                fontWeight: 600,
+                cursor: !description.trim() || isSubmitting ? 'not-allowed' : 'pointer',
+                transition: 'background 0.15s, transform 0.1s',
+                opacity: !description.trim() || isSubmitting ? 0.6 : 1,
+              }}
+              onMouseEnter={(e) => {
+                if (!e.currentTarget.disabled) e.currentTarget.style.background = '#5ab322';
+              }}
+              onMouseLeave={(e) => {
+                if (!e.currentTarget.disabled) e.currentTarget.style.background = '#67C728';
+              }}
+              onMouseDown={(e) => {
+                if (!e.currentTarget.disabled) e.currentTarget.style.transform = 'scale(0.97)';
+              }}
+              onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
             >
               {isSubmitting ? 'Enviando...' : 'Enviar Feedback'}
-            </Button>
+            </button>
           </div>
         </div>
       )}
