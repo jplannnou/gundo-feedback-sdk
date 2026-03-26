@@ -114,6 +114,8 @@ jobs:
           token: ${{ secrets.SDK_PROPAGATE_TOKEN }}
 
       - uses: pnpm/action-setup@v5
+        with:
+          version: 10
 
       - uses: actions/setup-node@v6
         with:
@@ -121,7 +123,9 @@ jobs:
           registry-url: https://npm.pkg.github.com
 
       - name: Configure git credentials for private dependencies
-        run: git config --global url."https://x-access-token:${{ secrets.SDK_PROPAGATE_TOKEN }}@github.com/".insteadOf "https://github.com/"
+        run: |
+          git config --global url."https://x-access-token:${{ secrets.SDK_PROPAGATE_TOKEN }}@github.com/".insteadOf "https://github.com/"
+          git config --global url."https://x-access-token:${{ secrets.SDK_PROPAGATE_TOKEN }}@github.com/".insteadOf "git+https://github.com/"
 
       - name: 'Check if SDK is used (skip file: protocol)'
         id: check
