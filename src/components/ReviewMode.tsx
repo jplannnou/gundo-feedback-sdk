@@ -141,9 +141,11 @@ export function ReviewMode({
           const url = URL.createObjectURL(blob);
           setScreenshotPreview(url);
         } else {
+          console.warn(`[feedback-sdk] Capture element not found: "${captureSelector}"`);
           setScreenshotFailed(true);
         }
-      } catch {
+      } catch (err) {
+        console.error('[feedback-sdk] Screenshot capture failed:', err);
         setScreenshotFailed(true);
       }
 
