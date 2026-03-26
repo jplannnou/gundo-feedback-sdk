@@ -1,148 +1,70 @@
 /**
- * Force cross-origin images to reload with CORS headers so html2canvas can read them.
- * Without this, the browser may serve a cached non-CORS response which taints the canvas.
- */
-function prepareCrossOriginImages(root: HTMLElement): () => void {
-  const images = root.querySelectorAll('img');
-  const originals: { img: HTMLImageElement; crossOrigin: string | null; src: string }[] = [];
-
-  for (const img of images) {
-    const src = img.src || '';
-    if (!src || src.startsWith('data:') || src.startsWith('blob:')) continue;
-
-    try {
-      const imgUrl = new URL(src, window.location.origin);
-      if (imgUrl.origin !== window.location.origin && !img.crossOrigin) {
-        originals.push({ img, crossOrigin: img.crossOrigin, src: img.src });
-        img.crossOrigin = 'anonymous';
-        // Bust browser cache to force re-fetch with CORS
-        const separator = img.src.includes('?') ? '&' : '?';
-        img.src = img.src + separator + '_cors=1';
-      }
-    } catch {
-      // invalid URL, skip
-    }
-  }
-
-  return () => {
-    for (const { img, crossOrigin, src } of originals) {
-      img.crossOrigin = crossOrigin;
-      img.src = src;
-    }
-  };
-}
-
-/**
- * Hide cross-origin images by replacing their src with a transparent pixel.
- * Used as a fallback when CORS capture fails — produces a screenshot without
- * external images rather than no screenshot at all.
- */
-const TRANSPARENT_PIXEL = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
-
-function hideCrossOriginImages(root: HTMLElement): () => void {
-  const images = root.querySelectorAll('img');
-  const originals: { img: HTMLImageElement; src: string; crossOrigin: string | null }[] = [];
-
-  for (const img of images) {
-    const src = img.src || '';
-    if (!src || src.startsWith('data:') || src.startsWith('blob:')) continue;
-
-    try {
-      const imgUrl = new URL(src, window.location.origin);
-      if (imgUrl.origin !== window.location.origin) {
-        originals.push({ img, src: img.src, crossOrigin: img.crossOrigin });
-        img.src = TRANSPARENT_PIXEL;
-        img.crossOrigin = null;
-      }
-    } catch {
-      // invalid URL, skip
-    }
-  }
-
-  return () => {
-    for (const { img, src, crossOrigin } of originals) {
-      img.src = src;
-      img.crossOrigin = crossOrigin;
-    }
-  };
-}
-
-/**
- * Wait for all images inside root to finish loading (or fail), up to a timeout.
- */
-function waitForImages(root: HTMLElement, timeoutMs: number): Promise<void> {
-  const images = root.querySelectorAll('img');
-  const pending: Promise<void>[] = [];
-
-  for (const img of images) {
-    if (!img.complete) {
-      pending.push(new Promise<void>(resolve => {
-        img.addEventListener('load', () => resolve(), { once: true });
-        img.addEventListener('error', () => resolve(), { once: true });
-      }));
-    }
-  }
-
-  if (pending.length === 0) return Promise.resolve();
-
-  return Promise.race([
-    Promise.all(pending).then(() => {}),
-    new Promise<void>(resolve => setTimeout(resolve, timeoutMs)),
-  ]);
-}
-
-/**
- * Capture a screenshot of an HTML element using html2canvas.
- * html2canvas is dynamically imported to avoid bundling it in the main chunk.
- * Consumer projects must install html2canvas as a dependency.
+ * Screenshot capture utility.
  *
- * Strategy: try CORS-clean capture first. If that fails (tainted canvas, CORS errors),
- * fall back to capturing with cross-origin images hidden (degraded but functional).
+ * Primary: html-to-image (uses browser-native SVG foreignObject rendering,
+ * supports ALL modern CSS including oklch/oklab from Tailwind 4).
+ *
+ * Fallback: html2canvas (for consumers that haven't installed html-to-image).
+ *
+ * Consumer projects should install html-to-image as a dependency:
+ *   pnpm add html-to-image
+ */
+
+/**
+ * Capture a screenshot of an HTML element.
+ * Tries html-to-image first (modern CSS compatible), falls back to html2canvas.
  */
 export async function captureElementScreenshot(element: HTMLElement): Promise<Blob> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const mod = await import('html2canvas' as any);
-  const html2canvas = mod.default || mod;
-
-  // Attempt 1: CORS-clean capture (best quality)
-  const restoreCors = prepareCrossOriginImages(element);
-  await waitForImages(element, 2000);
-
+  // Attempt 1: html-to-image (preferred — supports oklch, oklab, modern CSS)
   try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const htmlToImage = await import('html-to-image' as any);
+    const toPng = htmlToImage.toPng || htmlToImage.default?.toPng;
+
+    if (toPng) {
+      const dataUrl = await toPng(element, {
+        backgroundColor: '#1a1a2e',
+        pixelRatio: Math.min(window.devicePixelRatio || 1, 2),
+        skipFonts: true,
+      });
+      const blob = dataUrlToBlob(dataUrl);
+      if (blob && blob.size > 0) return blob;
+      console.warn('[feedback-sdk] html-to-image produced empty result, trying html2canvas');
+    }
+  } catch (err) {
+    console.warn('[feedback-sdk] html-to-image failed, trying html2canvas:', err);
+  }
+
+  // Attempt 2: html2canvas (legacy fallback)
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const mod = await import('html2canvas' as any);
+    const html2canvas = mod.default || mod;
+
     const canvas = await html2canvas(element, {
       scale: Math.min(window.devicePixelRatio || 1, 2),
       backgroundColor: '#1a1a2e',
       useCORS: true,
-      allowTaint: false,
+      allowTaint: true,
       logging: false,
     });
-    const blob = await canvasToBlob(canvas);
-    restoreCors();
-    return blob;
-  } catch (corsError) {
-    restoreCors();
-    console.warn('[feedback-sdk] CORS capture failed, retrying without external images:', corsError);
+    return canvasToBlob(canvas);
+  } catch (err) {
+    console.error('[feedback-sdk] Screenshot capture failed completely:', err);
+    throw err;
   }
+}
 
-  // Attempt 2: Hide cross-origin images and capture without them
-  const restoreHidden = hideCrossOriginImages(element);
-
-  try {
-    const canvas = await html2canvas(element, {
-      scale: Math.min(window.devicePixelRatio || 1, 2),
-      backgroundColor: '#1a1a2e',
-      useCORS: false,
-      allowTaint: false,
-      logging: false,
-    });
-    const blob = await canvasToBlob(canvas);
-    restoreHidden();
-    return blob;
-  } catch (fallbackError) {
-    restoreHidden();
-    console.error('[feedback-sdk] Screenshot capture failed completely:', fallbackError);
-    throw fallbackError;
-  }
+/**
+ * Convert a data URL to a Blob.
+ */
+function dataUrlToBlob(dataUrl: string): Blob {
+  const parts = dataUrl.split(',');
+  const mime = parts[0].match(/:(.*?);/)?.[1] || 'image/png';
+  const raw = atob(parts[1]);
+  const bytes = new Uint8Array(raw.length);
+  for (let i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
+  return new Blob([bytes], { type: mime });
 }
 
 /**
@@ -155,7 +77,7 @@ function canvasToBlob(canvas: HTMLCanvasElement): Promise<Blob> {
         if (blob && blob.size > 0) {
           resolve(blob);
         } else {
-          reject(new Error(`[feedback-sdk] canvas.toBlob returned ${blob ? 'empty blob' : 'null'} (canvas ${canvas.width}x${canvas.height})`));
+          reject(new Error(`[feedback-sdk] canvas.toBlob returned ${blob ? 'empty blob' : 'null'}`));
         }
       }, 'image/png');
     } catch (err) {
@@ -178,6 +100,7 @@ export async function captureAreaScreenshot(
   imageElement: HTMLElement,
   boundingBox: { x: number; y: number; width: number; height: number },
 ): Promise<Blob> {
+  // For area capture, use html2canvas (html-to-image doesn't support partial capture)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const mod = await import('html2canvas' as any);
   const html2canvas = mod.default || mod;
@@ -190,6 +113,7 @@ export async function captureAreaScreenshot(
     height: rect.height * boundingBox.height,
     backgroundColor: null,
     useCORS: true,
+    allowTaint: true,
     logging: false,
   });
   return canvasToBlob(canvas);
