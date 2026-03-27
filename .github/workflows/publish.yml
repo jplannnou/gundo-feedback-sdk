@@ -18,8 +18,6 @@ jobs:
       - uses: actions/checkout@v5
 
       - uses: pnpm/action-setup@v5
-        with:
-          version: '10.30.1'
 
       - uses: actions/setup-node@v6
         with:
@@ -114,8 +112,6 @@ jobs:
           token: ${{ secrets.SDK_PROPAGATE_TOKEN }}
 
       - uses: pnpm/action-setup@v5
-        with:
-          version: 10
 
       - uses: actions/setup-node@v6
         with:
@@ -140,6 +136,21 @@ jobs:
             echo "⚠️ feedback-sdk uses file: protocol, skipping"
           else
             echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Clone @gundo/ui for repos that use file: protocol
+        if: steps.check.outputs.skip != 'true'
+        run: |
+          PKG="${{ matrix.pkg_dir }}/package.json"
+          if [ "${{ matrix.pkg_dir }}" = "." ]; then PKG="package.json"; fi
+          if grep -q '"@gundo/ui"' "$PKG" && grep '@gundo/ui' "$PKG" | grep -q '"file:'; then
+            UI_PATH=$(grep -oP '"@gundo/ui"\s*:\s*"file:\K[^"]+' "$PKG")
+            RESOLVED=$(cd "$(dirname "$PKG")" && realpath -m "$UI_PATH" 2>/dev/null || echo "$UI_PATH")
+            echo "📦 Cloning @gundo/ui to $RESOLVED"
+            git clone --depth 1 https://github.com/jplannnou/gundo-ui.git "$RESOLVED"
+            cd "$RESOLVED" && pnpm install --no-frozen-lockfile && pnpm build
+          else
+            echo "✅ No file: protocol for @gundo/ui, skipping clone"
           fi
 
       - name: Update SDK to v${{ env.VERSION }}
