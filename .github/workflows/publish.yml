@@ -138,7 +138,7 @@ jobs:
             echo "skip=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Clone @gundo/ui for repos that use file: protocol
+      - name: "Clone @gundo/ui for repos that use file: protocol"
         if: steps.check.outputs.skip != 'true'
         run: |
           PKG="${{ matrix.pkg_dir }}/package.json"
@@ -170,7 +170,7 @@ jobs:
           fi
 
       - name: Push to main
-        if: steps.changes.outputs.changed == 'true' && matrix.direct_push
+        if: ${{ steps.changes.outputs.changed == 'true' && matrix.direct_push == true }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
