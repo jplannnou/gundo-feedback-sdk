@@ -50,6 +50,7 @@ export function ReviewMode({
   const [screenshotBlob, setScreenshotBlob] = useState<Blob | null>(null);
   const [screenshotPreview, setScreenshotPreview] = useState<string | null>(null);
   const [screenshotFailed, setScreenshotFailed] = useState(false);
+  const [isCapturing, setIsCapturing] = useState(false);
 
   const [description, setDescription] = useState('');
   const [feedbackType, setFeedbackType] = useState<FeedbackType>(types[0]);
@@ -128,28 +129,37 @@ export function ReviewMode({
       e.preventDefault();
       e.stopPropagation();
 
-      setHighlightRect(null);
       setDetectedSection(detectSection());
       setScreenshotFailed(false);
 
-      // Capture screenshot BEFORE showing form to avoid layout interference
+      // Capture the clicked element (or its closest logical container).
+      // Falls back to captureSelector only if no target is available.
+      const targetEl = pointerDownTargetRef.current ?? target;
+      const captureEl =
+        targetEl.closest<HTMLElement>(
+          '[data-feedback-region], section, article, header, footer, aside, main',
+        ) ??
+        (document.querySelector(captureSelector) as HTMLElement | null) ??
+        targetEl;
+
+      // Keep highlight visible during capture so the user sees what was selected.
+      setIsCapturing(true);
+      const prevCursor = document.documentElement.style.cursor;
+      document.documentElement.style.cursor = 'progress';
+
       try {
-        const captureEl = document.querySelector(captureSelector) as HTMLElement;
-        if (captureEl) {
-          const blob = await captureElementScreenshot(captureEl);
-          setScreenshotBlob(blob);
-          const url = URL.createObjectURL(blob);
-          setScreenshotPreview(url);
-        } else {
-          console.warn(`[feedback-sdk] Capture element not found: "${captureSelector}"`);
-          setScreenshotFailed(true);
-        }
+        const blob = await captureElementScreenshot(captureEl);
+        setScreenshotBlob(blob);
+        setScreenshotPreview(URL.createObjectURL(blob));
       } catch (err) {
         console.error('[feedback-sdk] Screenshot capture failed:', err);
         setScreenshotFailed(true);
+      } finally {
+        document.documentElement.style.cursor = prevCursor;
+        setIsCapturing(false);
+        setHighlightRect(null);
+        setShowForm(true);
       }
-
-      setShowForm(true);
     },
     [active, showForm, captureSelector],
   );
@@ -264,22 +274,50 @@ export function ReviewMode({
   const highlightStyle: CSSProperties | undefined = highlightRect && !showForm
     ? {
         position: 'fixed',
-        top: highlightRect.top - 2,
-        left: highlightRect.left - 2,
-        width: highlightRect.width + 4,
-        height: highlightRect.height + 4,
+        top: highlightRect.top - 4,
+        left: highlightRect.left - 4,
+        width: highlightRect.width + 8,
+        height: highlightRect.height + 8,
         border: '2px solid #3b82f6',
-        borderRadius: '4px',
+        borderRadius: '6px',
+        background: isCapturing ? 'rgba(59,130,246,0.18)' : 'rgba(59,130,246,0.08)',
+        // Spotlight: dim the rest of the page so the selection is unmistakable.
+        boxShadow: isCapturing
+          ? '0 0 0 9999px rgba(0,0,0,0.45), 0 0 24px rgba(59,130,246,0.5)'
+          : '0 0 0 9999px rgba(0,0,0,0.15)',
         pointerEvents: 'none',
         zIndex: 99998,
-        transition: 'all 0.1s ease-out',
+        transition: 'background 0.15s ease-out, box-shadow 0.15s ease-out',
       }
     : undefined;
 
   return (
     <>
       {/* Highlight overlay */}
-      {highlightStyle && <div data-review-mode style={highlightStyle} />}
+      {highlightStyle && (
+        <div data-review-mode style={highlightStyle}>
+          {isCapturing && (
+            <div
+              data-review-mode
+              style={{
+                position: 'absolute',
+                top: 8,
+                left: 8,
+                padding: '4px 10px',
+                borderRadius: '4px',
+                background: 'rgba(59,130,246,0.95)',
+                color: '#fff',
+                fontSize: '12px',
+                fontWeight: 600,
+                fontFamily: t.fontFamily,
+                pointerEvents: 'none',
+              }}
+            >
+              Capturando…
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Form panel */}
       {showForm && (

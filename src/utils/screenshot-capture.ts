@@ -24,8 +24,13 @@ export async function captureElementScreenshot(element: HTMLElement): Promise<Bl
     if (toPng) {
       const dataUrl = await toPng(element, {
         backgroundColor: '#1a1a2e',
-        pixelRatio: Math.min(window.devicePixelRatio || 1, 2),
+        pixelRatio: 1,
         skipFonts: true,
+        cacheBust: false,
+        // Skip the SDK's own overlays (highlight, form panel, toggle button)
+        // so they don't end up rasterized inside the screenshot.
+        filter: (node: HTMLElement) =>
+          !(node?.dataset && node.dataset.reviewMode !== undefined),
       });
       const blob = dataUrlToBlob(dataUrl);
       if (blob && blob.size > 0) return blob;
@@ -42,11 +47,13 @@ export async function captureElementScreenshot(element: HTMLElement): Promise<Bl
     const html2canvas = mod.default || mod;
 
     const canvas = await html2canvas(element, {
-      scale: Math.min(window.devicePixelRatio || 1, 2),
+      scale: 1,
       backgroundColor: '#1a1a2e',
       useCORS: true,
       allowTaint: true,
       logging: false,
+      ignoreElements: (el: Element) =>
+        el instanceof HTMLElement && el.dataset?.reviewMode !== undefined,
     });
     return canvasToBlob(canvas);
   } catch (err) {
