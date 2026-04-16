@@ -5,7 +5,7 @@
     ":pinAllExceptPeerDependencies"
   ],
   "schedule": ["before 9am on monday"],
-  "timezone": "America/Madrid",
+  "timezone": "Europe/Madrid",
   "labels": ["dependencies"],
   "rangeStrategy": "bump",
   "lockFileMaintenance": {
