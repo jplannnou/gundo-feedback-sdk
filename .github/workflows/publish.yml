@@ -1,159 +1,104 @@
-name: Publish to GitHub Packages
+name: Release & Publish
 
 on:
   push:
-    tags:
-      - 'v*'
+    branches: [main]
+    paths-ignore: ['*.md', 'CHANGELOG.md', '.gitignore']
 
-permissions:
-  contents: read
-  packages: write
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false   # never cancel an in-flight release
 
 jobs:
-  publish:
-    runs-on: ubuntu-latest
-    outputs:
-      version: ${{ steps.version.outputs.value }}
-    steps:
-      - uses: actions/checkout@v5
+  # ── semantic-release: version bump + GitHub Packages publish ──────────────
+  release:
+    uses: jplannnou/gundo-workflows/.github/workflows/reusable-publish-npm.yml@v1
+    with:
+      build-command: >
+        git clone --depth 1 https://github.com/jplannnou/gundo-ui.git ../gundo-ui &&
+        cd ../gundo-ui && pnpm install --no-frozen-lockfile && pnpm build && cd - &&
+        pnpm install --no-frozen-lockfile && pnpm build
+    secrets:
+      GH_PACKAGES_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
 
-      - uses: pnpm/action-setup@v5
-
-      - uses: actions/setup-node@v6
-        with:
-          node-version: 22
-          registry-url: https://npm.pkg.github.com
-          cache: 'pnpm'
-
-      - name: Clone and build @gundo/ui (peer dependency)
-        run: |
-          git clone --depth 1 https://github.com/jplannnou/gundo-ui.git ../gundo-ui
-          cd ../gundo-ui && pnpm install --no-frozen-lockfile && pnpm build
-
-      - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
-
-      - name: Build
-        run: pnpm build
-
-      - name: Extract version
-        id: version
-        run: echo "value=$(node -p 'require("./package.json").version')" >> "$GITHUB_OUTPUT"
-
-      - name: Verify dist
-        run: |
-          echo "--- Checking required dist files ---"
-          test -f dist/index.js   || (echo "ERROR: dist/index.js not found" && exit 1)
-          test -f dist/index.d.ts || (echo "ERROR: dist/index.d.ts not found" && exit 1)
-          echo "dist/index.js and dist/index.d.ts are present"
-
-          echo "--- Checking CSS files are copied from src/ to dist/ ---"
-          for src_css in $(find src -name "*.css"); do
-            rel="${src_css#src/}"
-            if [ ! -f "dist/$rel" ]; then
-              echo "ERROR: dist/$rel is missing (expected from $src_css)"
-              exit 1
-            fi
-            echo "OK: dist/$rel"
-          done
-
-          echo "--- dist/ contents ---"
-          find dist -type f | sort
-
-      - name: Publish
-        run: pnpm publish --no-git-checks --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  # ── Auto-propagate to all consumer repos ──────────────────────────
-  # Checks out each consumer, runs `pnpm add` to update package.json + lockfile,
-  # then pushes directly (JP repos) or creates a PR (external repos).
+  # ── Propagate new version to all consumer repos (open PRs) ────────────────
   propagate:
-    needs: publish
+    needs: release
+    if: needs.release.outputs.released == 'true'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         include:
-          # JP's repos → push directo a main
           - repo: jplannnou/Gundo_Engine
             pkg_dir: frontend
-            direct_push: true
           - repo: jplannnou/Gundo_Finance
             pkg_dir: frontend
-            direct_push: true
           - repo: jplannnou/Gundo_Radar
             pkg_dir: client
-            direct_push: true
           - repo: jplannnou/jp-assistant
             pkg_dir: frontend
-            direct_push: true
           - repo: jplannnou/gundo-feedback
             pkg_dir: frontend
-            direct_push: true
-          # External repos → PR with lockfile
+          - repo: jplannnou/gundo-vida
+            pkg_dir: .
           - repo: Gundo-Health-and-Food/gundo-admin-fitness-ui
             pkg_dir: .
-            direct_push: false
-          - repo: Gundo-Health-and-Food/gundo-website-ui
-            pkg_dir: .
-            direct_push: true
-          - repo: Gundo-Health-and-Food/gundo-internal-dashboard-ui
-            pkg_dir: .
-            direct_push: true
     env:
-      VERSION: ${{ needs.publish.outputs.version }}
-      NODE_AUTH_TOKEN: ${{ secrets.SDK_PROPAGATE_TOKEN }}
+      VERSION: ${{ needs.release.outputs.new-version }}
+      NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
     steps:
       - name: Checkout ${{ matrix.repo }}
         uses: actions/checkout@v5
         with:
           repository: ${{ matrix.repo }}
-          token: ${{ secrets.SDK_PROPAGATE_TOKEN }}
+          token: ${{ secrets.GH_PACKAGES_TOKEN }}
 
       - uses: pnpm/action-setup@v5
+        with:
+          version: 10.30.1
 
       - uses: actions/setup-node@v6
         with:
           node-version: 22
           registry-url: https://npm.pkg.github.com
+          scope: '@jplannnou'
 
-      - name: Configure git credentials for private dependencies
+      - name: Configure git for private deps
         run: |
-          git config --global url."https://x-access-token:${{ secrets.SDK_PROPAGATE_TOKEN }}@github.com/".insteadOf "https://github.com/"
-          git config --global url."https://x-access-token:${{ secrets.SDK_PROPAGATE_TOKEN }}@github.com/".insteadOf "git+https://github.com/"
+          git config --global url."https://x-access-token:${{ secrets.GH_PACKAGES_TOKEN }}@github.com/".insteadOf "https://github.com/"
+          git config --global url."https://x-access-token:${{ secrets.GH_PACKAGES_TOKEN }}@github.com/".insteadOf "git+https://github.com/"
 
-      - name: 'Check if SDK is used (skip file: protocol)'
+      - name: Check if feedback-sdk is used via npm (not file:)
         id: check
         run: |
-          PKG="${{ matrix.pkg_dir }}/package.json"
-          if [ "${{ matrix.pkg_dir }}" = "." ]; then PKG="package.json"; fi
+          PKG="package.json"
+          if [ "${{ matrix.pkg_dir }}" != "." ]; then PKG="${{ matrix.pkg_dir }}/package.json"; fi
           if ! grep -q 'feedback-sdk' "$PKG" 2>/dev/null; then
             echo "skip=true" >> "$GITHUB_OUTPUT"
-            echo "⚠️ feedback-sdk not found in $PKG"
+            echo "⚠️  feedback-sdk not found in $PKG — skipping"
           elif grep 'feedback-sdk' "$PKG" | grep -q '"file:'; then
             echo "skip=true" >> "$GITHUB_OUTPUT"
-            echo "⚠️ feedback-sdk uses file: protocol, skipping"
+            echo "ℹ️  Uses file: protocol — pnpm install picks it up, no version bump needed"
           else
             echo "skip=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: "Clone @gundo/ui for repos that use file: protocol"
+      - name: Clone @gundo/ui if repo uses file: protocol for it
         if: steps.check.outputs.skip != 'true'
         run: |
-          PKG="${{ matrix.pkg_dir }}/package.json"
-          if [ "${{ matrix.pkg_dir }}" = "." ]; then PKG="package.json"; fi
-          if grep -q '"@gundo/ui"' "$PKG" && grep '@gundo/ui' "$PKG" | grep -q '"file:'; then
-            UI_PATH=$(grep -oP '"@gundo/ui"\s*:\s*"file:\K[^"]+' "$PKG")
-            RESOLVED=$(cd "$(dirname "$PKG")" && realpath -m "$UI_PATH" 2>/dev/null || echo "$UI_PATH")
+          PKG="package.json"
+          if [ "${{ matrix.pkg_dir }}" != "." ]; then PKG="${{ matrix.pkg_dir }}/package.json"; fi
+          if grep -q '@gundo/ui\|@jplannnou/gundo-ui' "$PKG" && grep '@gundo/ui\|@jplannnou/gundo-ui' "$PKG" | grep -q '"file:'; then
+            UI_PATH=$(grep -oP '"@gundo/ui"\s*:\s*"file:\K[^"]+|"@jplannnou/gundo-ui"\s*:\s*"file:\K[^"]+' "$PKG" | head -1)
+            DIR=$(dirname "$PKG")
+            RESOLVED=$(cd "$DIR" && realpath -m "$UI_PATH" 2>/dev/null || echo "$(dirname $(pwd))/${UI_PATH#../}")
             echo "📦 Cloning @gundo/ui to $RESOLVED"
             git clone --depth 1 https://github.com/jplannnou/gundo-ui.git "$RESOLVED"
             cd "$RESOLVED" && pnpm install --no-frozen-lockfile && pnpm build
-          else
-            echo "✅ No file: protocol for @gundo/ui, skipping clone"
           fi
 
-      - name: Update SDK to v${{ env.VERSION }}
+      - name: Update feedback-sdk to v${{ env.VERSION }}
         if: steps.check.outputs.skip != 'true'
         working-directory: ${{ matrix.pkg_dir }}
         run: pnpm add "@gundo/feedback-sdk@npm:@jplannnou/feedback-sdk@^${VERSION}"
@@ -169,27 +114,24 @@ jobs:
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Push to main
-        if: ${{ steps.changes.outputs.changed == 'true' && matrix.direct_push == true }}
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add pnpm-lock.yaml "${{ matrix.pkg_dir }}/package.json"
-          git commit -m "chore: update feedback-sdk to v${VERSION} (auto-propagate)"
-          git push
-
-      - name: Create PR
-        if: steps.changes.outputs.changed == 'true' && !matrix.direct_push
+      - name: Open PR with version bump
+        if: steps.check.outputs.skip != 'true' && steps.changes.outputs.changed == 'true'
         env:
-          GH_TOKEN: ${{ secrets.SDK_PROPAGATE_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
         run: |
           BRANCH="chore/update-feedback-sdk-${VERSION}"
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git checkout -b "$BRANCH"
-          git add pnpm-lock.yaml "${{ matrix.pkg_dir }}/package.json"
-          git commit -m "chore: update feedback-sdk to v${VERSION}"
+          git add .
+          git commit -m "chore: update @gundo/feedback-sdk to ^${VERSION} (auto-propagate)"
           git push -u origin "$BRANCH"
           gh pr create \
+            --repo "${{ matrix.repo }}" \
             --title "chore: update @gundo/feedback-sdk to ^${VERSION}" \
-            --body "Bumps feedback-sdk to ^${VERSION} with updated lockfile. Triggered by [v${VERSION} publish](https://github.com/jplannnou/gundo-feedback-sdk/releases/tag/v${VERSION})."
+            --body "Bumps \`@gundo/feedback-sdk\` to \`^${VERSION}\` with updated lockfile.
+
+Triggered by [v${VERSION} release](https://github.com/jplannnou/gundo-feedback-sdk/releases/tag/v${VERSION}).
+
+---
+*Auto-generated by gundo-feedback-sdk publish workflow.*"
