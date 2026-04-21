@@ -1,3 +1,10 @@
+## [1.4.2](https://github.com/jplannnou/gundo-feedback-sdk/compare/v1.4.1...v1.4.2) (2026-04-21)
+
+
+### Bug Fixes
+
+* **ci:** use GITHUB_TOKEN for publish (write:packages scope) ([c46bc28](https://github.com/jplannnou/gundo-feedback-sdk/commit/c46bc28a396c952bd70a37917ab93e8692aeece7))
+
 ## [1.4.1](https://github.com/jplannnou/gundo-feedback-sdk/compare/v1.4.0...v1.4.1) (2026-04-21)
 
 
