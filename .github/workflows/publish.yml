@@ -47,7 +47,7 @@ jobs:
 
       - name: Build SDK
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.SDK_PROPAGATE_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: pnpm install --no-frozen-lockfile && pnpm build
 
       - name: Install semantic-release plugins (isolated dir)
@@ -67,9 +67,9 @@ jobs:
       - name: Run semantic-release
         id: sr
         env:
-          GITHUB_TOKEN: ${{ secrets.SDK_PROPAGATE_TOKEN }}
-          NODE_AUTH_TOKEN: ${{ secrets.SDK_PROPAGATE_TOKEN }}
-          NPM_TOKEN: ${{ secrets.SDK_PROPAGATE_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: NODE_PATH=/tmp/sr/node_modules /tmp/sr/node_modules/.bin/semantic-release
 
   propagate:
