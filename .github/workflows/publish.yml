@@ -70,7 +70,17 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: NODE_PATH=/tmp/sr/node_modules /tmp/sr/node_modules/.bin/semantic-release
+        run: |
+          PREV_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "none")
+          NODE_PATH=/tmp/sr/node_modules /tmp/sr/node_modules/.bin/semantic-release
+          NEW_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "none")
+          if [ "$NEW_TAG" != "$PREV_TAG" ] && [ "$NEW_TAG" != "none" ]; then
+            echo "released=true" >> "$GITHUB_OUTPUT"
+            echo "new-version=${NEW_TAG#v}" >> "$GITHUB_OUTPUT"
+          else
+            echo "released=false" >> "$GITHUB_OUTPUT"
+            echo "new-version=" >> "$GITHUB_OUTPUT"
+          fi
 
   propagate:
     name: Propagate to consumers
