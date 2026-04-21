@@ -71,19 +71,17 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          set +e
-          SR_OUT=$(NODE_PATH=/tmp/sr/node_modules /tmp/sr/node_modules/.bin/semantic-release 2>&1)
-          SR_EXIT=$?
-          echo "$SR_OUT"
-          NEW_VERSION=$(echo "$SR_OUT" | grep -oP 'Published release \K[0-9]+\.[0-9]+\.[0-9]+' | head -1)
-          if [ -n "$NEW_VERSION" ]; then
+          PREV_VERSION=$(gh release view --json tagName --jq '.tagName' 2>/dev/null | sed 's/^v//' || echo "none")
+          NODE_PATH=/tmp/sr/node_modules /tmp/sr/node_modules/.bin/semantic-release
+          NEW_VERSION=$(gh release view --json tagName --jq '.tagName' 2>/dev/null | sed 's/^v//' || echo "none")
+          echo "prev=$PREV_VERSION new=$NEW_VERSION"
+          if [ "$NEW_VERSION" != "$PREV_VERSION" ] && [ "$NEW_VERSION" != "none" ]; then
             echo "released=true" >> "$GITHUB_OUTPUT"
             echo "new-version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
           else
             echo "released=false" >> "$GITHUB_OUTPUT"
             echo "new-version=" >> "$GITHUB_OUTPUT"
           fi
-          exit $SR_EXIT
 
   propagate:
     name: Propagate to consumers
