@@ -1,3 +1,10 @@
+## [1.4.3](https://github.com/jplannnou/gundo-feedback-sdk/compare/v1.4.2...v1.4.3) (2026-04-21)
+
+
+### Bug Fixes
+
+* **ci:** capture semantic-release output via git tag comparison ([357a6b9](https://github.com/jplannnou/gundo-feedback-sdk/commit/357a6b9664b2f3e2747742cf3b5a038084f3d8cb))
+
 ## [1.4.2](https://github.com/jplannnou/gundo-feedback-sdk/compare/v1.4.1...v1.4.2) (2026-04-21)
 
 
