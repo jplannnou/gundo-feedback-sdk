@@ -1,3 +1,10 @@
+## [1.4.4](https://github.com/jplannnou/gundo-feedback-sdk/compare/v1.4.3...v1.4.4) (2026-04-21)
+
+
+### Bug Fixes
+
+* **ci:** parse SR stdout to capture released/version outputs ([4e90736](https://github.com/jplannnou/gundo-feedback-sdk/commit/4e90736b05343b6cd373512fdd82ba64c6bec6ab))
+
 ## [1.4.3](https://github.com/jplannnou/gundo-feedback-sdk/compare/v1.4.2...v1.4.3) (2026-04-21)
 
 
