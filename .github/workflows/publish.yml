@@ -21,8 +21,8 @@ jobs:
     name: Semantic Release
     runs-on: ubuntu-latest
     outputs:
-      new-version: ${{ steps.sr.outputs.new_release_version }}
-      released: ${{ steps.sr.outputs.new_release_published }}
+      new-version: ${{ steps.sr.outputs.new-version }}
+      released: ${{ steps.sr.outputs.released }}
     steps:
       - uses: actions/checkout@v4
         with:
