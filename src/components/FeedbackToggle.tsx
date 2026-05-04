@@ -94,6 +94,16 @@ export function FeedbackToggle({
   const showLabel = !(compactOnMobile && isMobile);
   const padding = compactOnMobile && isMobile ? '10px' : '12px 20px';
 
+  // WCAG 2.5.3 (Label in Name): when the button shows visible text, the
+  // accessible name MUST include that visible text. Otherwise voice-control
+  // users saying the visible word can't activate the control. We use the
+  // visible text verbatim when present, and fall back to a descriptive label
+  // only when the icon-only compact-mobile mode is active.
+  const visibleLabel = label || (active ? 'Salir Revisión' : 'Feedback');
+  const accessibleName = showLabel
+    ? visibleLabel
+    : active ? 'Salir del modo revisión' : 'Activar modo revisión';
+
   const handlePointerDown = (e: PointerEvent<HTMLButtonElement>) => {
     if (!draggable) return;
     dragStartRef.current = { x: e.clientX, y: e.clientY, moved: false };
@@ -175,15 +185,15 @@ export function FeedbackToggle({
       onPointerUp={handlePointerUp}
       onPointerCancel={() => { dragStartRef.current = null; setDragOffset(null); }}
       data-review-mode
-      aria-label={active ? 'Salir del modo revisión' : 'Activar modo revisión'}
-      title={active ? 'Salir del modo revisión' : 'Activar modo revisión'}
+      aria-label={accessibleName}
+      title={accessibleName}
       style={baseStyle}
     >
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
       </svg>
       {showLabel && (
-        <span>{label || (active ? 'Salir Revisión' : 'Feedback')}</span>
+        <span>{visibleLabel}</span>
       )}
       {pendingCount > 0 && (
         <span
