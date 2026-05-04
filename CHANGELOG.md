@@ -1,3 +1,10 @@
+## [1.4.5](https://github.com/jplannnou/gundo-feedback-sdk/compare/v1.4.4...v1.4.5) (2026-05-04)
+
+
+### Bug Fixes
+
+* **FeedbackToggle:** align aria-label with visible text (WCAG 2.5.3) ([dbcef0a](https://github.com/jplannnou/gundo-feedback-sdk/commit/dbcef0a8aff86db250b4f4ed0590873636a2b7b6))
+
 ## [1.4.4](https://github.com/jplannnou/gundo-feedback-sdk/compare/v1.4.3...v1.4.4) (2026-04-21)
 
 
