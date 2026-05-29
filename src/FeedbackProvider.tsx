@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useRef, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { FeedbackClient } from './api/feedback-client';
 import { ContextCollector } from './utils/context-collector';
 import type { FeedbackConfig, FeedbackUserInfo } from './types';
@@ -8,6 +8,17 @@ interface FeedbackContextValue {
   client: FeedbackClient;
   user: FeedbackUserInfo | null;
   contextCollector: ContextCollector;
+  /**
+   * Whether the review/screenshot-capture overlay is active. Lifted to
+   * the provider so `<FeedbackPanel>` (rendered inside any UI, e.g. the
+   * GundoWidget's feedback tab) can activate it without prop-drilling.
+   * `<ReviewMode>` reads this value when no explicit `active` prop is
+   * passed, so existing consumers that wired ReviewMode props directly
+   * keep working unchanged.
+   */
+  reviewActive: boolean;
+  activateReview: () => void;
+  deactivateReview: () => void;
 }
 
 const FeedbackContext = createContext<FeedbackContextValue | null>(null);
@@ -61,7 +72,14 @@ export function FeedbackProvider({
     [project, apiBaseUrl, getUser, modules, entityId, entityType],
   );
 
-  const value = useMemo(() => ({ config, client, user, contextCollector }), [config, client, user, contextCollector]);
+  const [reviewActive, setReviewActive] = useState(false);
+  const activateReview = useCallback(() => setReviewActive(true), []);
+  const deactivateReview = useCallback(() => setReviewActive(false), []);
+
+  const value = useMemo(
+    () => ({ config, client, user, contextCollector, reviewActive, activateReview, deactivateReview }),
+    [config, client, user, contextCollector, reviewActive, activateReview, deactivateReview],
+  );
 
   return <FeedbackContext.Provider value={value}>{children}</FeedbackContext.Provider>;
 }
@@ -71,3 +89,4 @@ export function useFeedbackContext() {
   if (!ctx) throw new Error('useFeedbackContext must be used within <FeedbackProvider>');
   return ctx;
 }
+
