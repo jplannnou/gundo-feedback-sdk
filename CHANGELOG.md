@@ -1,3 +1,10 @@
+## [1.5.1](https://github.com/jplannnou/gundo-feedback-sdk/compare/v1.5.0...v1.5.1) (2026-05-29)
+
+
+### Bug Fixes
+
+* **ci:** propagate — auto-detect consumer pnpm version (mirror gundo-ui [#24](https://github.com/jplannnou/gundo-feedback-sdk/issues/24)) ([#8](https://github.com/jplannnou/gundo-feedback-sdk/issues/8)) ([a5b86c2](https://github.com/jplannnou/gundo-feedback-sdk/commit/a5b86c2f292680045a2a8b6a0f974ecf47662641))
+
 # [1.5.0](https://github.com/jplannnou/gundo-feedback-sdk/compare/v1.4.5...v1.5.0) (2026-05-29)
 
 
