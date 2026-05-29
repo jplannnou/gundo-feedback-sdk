@@ -1,3 +1,10 @@
+# [1.5.0](https://github.com/jplannnou/gundo-feedback-sdk/compare/v1.4.5...v1.5.0) (2026-05-29)
+
+
+### Features
+
+* **FeedbackPanel:** in-app feedback CTA + context-backed review state ([#7](https://github.com/jplannnou/gundo-feedback-sdk/issues/7)) ([da0579e](https://github.com/jplannnou/gundo-feedback-sdk/commit/da0579efccc75c62b5f4f392a88f01283b95f575))
+
 ## [1.4.5](https://github.com/jplannnou/gundo-feedback-sdk/compare/v1.4.4...v1.4.5) (2026-05-04)
 
 
