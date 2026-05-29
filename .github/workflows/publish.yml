@@ -116,9 +116,33 @@ jobs:
           repository: ${{ matrix.repo }}
           token: ${{ secrets.SDK_PROPAGATE_TOKEN }}
 
+      # Same dance as gundo-ui propagate (PR #24, 2026-05-29):
+      # pnpm/action-setup@v4 errors out if `version` and `packageManager`
+      # are both set. Consumers (e.g. gundo-plataform-ui pins 10.11.0)
+      # have varying pnpm versions in their `packageManager` field. The
+      # hardcoded 10.30.1 here was breaking gundo-admin-fitness-ui and
+      # Gundo_Engine on the v1.5.0 release. Strategy: point the action
+      # at the matrix's pkg_dir/package.json; if that has packageManager
+      # pass empty version (auto-detect), else fall back to 10.30.1.
+      - name: Resolve pnpm config
+        id: pnpm-version
+        run: |
+          PKG="package.json"
+          if [ "${{ matrix.pkg_dir }}" != "." ]; then PKG="${{ matrix.pkg_dir }}/package.json"; fi
+          HAS_PM=$(node -p "!!require('./'+'$PKG').packageManager" 2>/dev/null || echo "false")
+          echo "pkg_file=$PKG" >> "$GITHUB_OUTPUT"
+          if [ "$HAS_PM" = "true" ]; then
+            echo "version=" >> "$GITHUB_OUTPUT"
+            echo "Source: packageManager field in $PKG (auto-detect)"
+          else
+            echo "version=10.30.1" >> "$GITHUB_OUTPUT"
+            echo "Source: workflow fallback (no packageManager in $PKG)"
+          fi
+
       - uses: pnpm/action-setup@v4
         with:
-          version: 10.30.1
+          version: ${{ steps.pnpm-version.outputs.version }}
+          package_json_file: ${{ steps.pnpm-version.outputs.pkg_file }}
 
       - uses: actions/setup-node@v4
         with:
