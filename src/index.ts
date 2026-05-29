@@ -17,6 +17,7 @@ export type { UseFeedbackSubmitReturn } from './hooks/useFeedbackSubmit';
 // ── Components ──────────────────────────────────────────────────
 export { ReviewMode } from './components/ReviewMode';
 export { FeedbackToggle } from './components/FeedbackToggle';
+export { FeedbackPanel } from './components/FeedbackPanel';
 export { FeedbackItemCard } from './components/FeedbackItemCard';
 export { CommentThread } from './components/CommentThread';
 export { FeedbackDashboard } from './components/FeedbackDashboard';

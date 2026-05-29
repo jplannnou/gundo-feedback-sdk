@@ -7,9 +7,15 @@ import { theme as t } from '../utils/theme';
 // dependency on consumer's Tailwind CSS generating the required utility classes.
 
 interface ReviewModeProps {
-  /** Whether review mode is active */
-  active: boolean;
-  /** Called when user deactivates review mode */
+  /**
+   * Whether review mode is active. Optional since v1.3 — when omitted,
+   * ReviewMode falls back to the `reviewActive` state from
+   * FeedbackContext. This lets sibling components (e.g. <FeedbackPanel>
+   * inside another widget) activate review mode without prop-drilling.
+   * Explicit `active` still wins when passed.
+   */
+  active?: boolean;
+  /** Called when user deactivates review mode (in addition to clearing context state) */
   onDeactivate?: () => void;
   /** Override for section detection */
   currentSection?: string;
@@ -42,7 +48,14 @@ export function ReviewMode({
   types = DEFAULT_TYPES,
   captureSelector = 'main',
 }: ReviewModeProps) {
-  const { config, client, user, contextCollector } = useFeedbackContext();
+  const { config, client, user, contextCollector, reviewActive: ctxActive, deactivateReview } = useFeedbackContext();
+
+  // Prop wins when provided (legacy callers); otherwise read context state.
+  const isActive = active !== undefined ? active : ctxActive;
+  const handleDeactivate = useCallback(() => {
+    if (active === undefined) deactivateReview();
+    onDeactivate?.();
+  }, [active, deactivateReview, onDeactivate]);
 
   const [, setHoveredEl] = useState<HTMLElement | null>(null);
   const [highlightRect, setHighlightRect] = useState<DOMRect | null>(null);
@@ -85,7 +98,7 @@ export function ReviewMode({
   // ── Element highlighting on pointer move (desktop hover) ──
   const handlePointerMove = useCallback(
     (e: PointerEvent) => {
-      if (!active || showForm) return;
+      if (!isActive || showForm) return;
       // Only highlight on mouse hover, not touch drag
       if (e.pointerType === 'touch') return;
       const target = e.target as HTMLElement;
@@ -93,13 +106,13 @@ export function ReviewMode({
       setHoveredEl(target);
       setHighlightRect(target.getBoundingClientRect());
     },
-    [active, showForm],
+    [isActive, showForm],
   );
 
   // ── Pointer down: highlight element (works for both mouse and touch) ──
   const handlePointerDown = useCallback(
     (e: PointerEvent) => {
-      if (!active || showForm) return;
+      if (!isActive || showForm) return;
       const target = e.target as HTMLElement;
       if (target.closest('[data-review-mode]')) return;
       // On touch: show highlight on tap-down (replaces hover)
@@ -109,13 +122,13 @@ export function ReviewMode({
       }
       pointerDownTargetRef.current = target;
     },
-    [active, showForm],
+    [isActive, showForm],
   );
 
   // ── Pointer up: confirm selection and open form ──
   const handlePointerUp = useCallback(
     async (e: PointerEvent) => {
-      if (!active || showForm) return;
+      if (!isActive || showForm) return;
       const target = e.target as HTMLElement;
       if (target.closest('[data-review-mode]')) return;
 
@@ -161,7 +174,7 @@ export function ReviewMode({
         setShowForm(true);
       }
     },
-    [active, showForm, captureSelector],
+    [isActive, showForm, captureSelector],
   );
 
   // ── Keyboard: Escape to close ──
@@ -170,18 +183,18 @@ export function ReviewMode({
       if (e.key === 'Escape') {
         if (showForm) {
           resetForm();
-        } else if (active) {
-          onDeactivate?.();
+        } else if (isActive) {
+          handleDeactivate();
         }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [active, showForm, onDeactivate]);
+  }, [isActive, showForm, handleDeactivate]);
 
   // ── Pointer listeners (unified mouse + touch + pen) ──
   useEffect(() => {
-    if (!active) return;
+    if (!isActive) return;
     document.addEventListener('pointermove', handlePointerMove);
     document.addEventListener('pointerdown', handlePointerDown, true);
     document.addEventListener('pointerup', handlePointerUp, true);
@@ -190,7 +203,7 @@ export function ReviewMode({
       document.removeEventListener('pointerdown', handlePointerDown, true);
       document.removeEventListener('pointerup', handlePointerUp, true);
     };
-  }, [active, handlePointerMove, handlePointerDown, handlePointerUp]);
+  }, [isActive, handlePointerMove, handlePointerDown, handlePointerUp]);
 
   function resetForm() {
     setShowForm(false);
@@ -269,7 +282,7 @@ export function ReviewMode({
     return () => clearTimeout(t);
   }, [toast]);
 
-  if (!active) return null;
+  if (!isActive) return null;
 
   const highlightStyle: CSSProperties | undefined = highlightRect && !showForm
     ? {
@@ -553,7 +566,7 @@ export function ReviewMode({
           <span>{isTouchDevice ? 'Toca cualquier elemento' : 'Click en cualquier elemento'}</span>
           <button
             data-review-mode
-            onClick={onDeactivate}
+            onClick={handleDeactivate}
             style={{
               background: 'rgba(255,255,255,0.2)',
               border: 'none',
