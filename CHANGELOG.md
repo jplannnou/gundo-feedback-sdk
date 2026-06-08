@@ -1,3 +1,10 @@
+## [1.5.2](https://github.com/jplannnou/gundo-feedback-sdk/compare/v1.5.1...v1.5.2) (2026-06-08)
+
+
+### Bug Fixes
+
+* **review-mode:** force dark color-scheme + text contrast on inputs ([#9](https://github.com/jplannnou/gundo-feedback-sdk/issues/9)) ([b2cfad9](https://github.com/jplannnou/gundo-feedback-sdk/commit/b2cfad97baa3ee1db20c3060d4dd185f92849454)), closes [#24](https://github.com/jplannnou/gundo-feedback-sdk/issues/24) [#24](https://github.com/jplannnou/gundo-feedback-sdk/issues/24) [#F2F4F3](https://github.com/jplannnou/gundo-feedback-sdk/issues/F2F4F3) [#F2F4F3](https://github.com/jplannnou/gundo-feedback-sdk/issues/F2F4F3)
+
 ## [1.5.1](https://github.com/jplannnou/gundo-feedback-sdk/compare/v1.5.0...v1.5.1) (2026-05-29)
 
 
