@@ -352,7 +352,7 @@ export function ReviewMode({
             fontFamily: t.fontFamily,
             fontSize: '16px',
             paddingBottom: 'env(safe-area-inset-bottom, 0px)',
-            // Inject CSS custom properties so @gundo/ui components resolve tokens correctly
+            colorScheme: 'dark',
             '--ui-surface': '#292E37',
             '--ui-surface-hover': 'rgba(255,255,255,0.07)',
             '--ui-text': '#F2F4F3',
@@ -364,6 +364,36 @@ export function ReviewMode({
             '--ui-primary-hover': '#5ab322',
           } as CSSProperties}
         >
+          <style>{`
+            [data-review-mode] textarea,
+            [data-review-mode] input,
+            [data-review-mode] select {
+              color: #F2F4F3 !important;
+              -webkit-text-fill-color: #F2F4F3 !important;
+              caret-color: #67C728;
+              color-scheme: dark;
+            }
+            [data-review-mode] textarea::placeholder,
+            [data-review-mode] input::placeholder {
+              color: #9ca3af !important;
+              opacity: 1;
+            }
+            [data-review-mode] textarea::selection,
+            [data-review-mode] input::selection {
+              background: rgba(103,199,40,0.35);
+              color: #F2F4F3;
+            }
+            [data-review-mode] select option {
+              background: #292E37;
+              color: #F2F4F3;
+            }
+            [data-review-mode] textarea:-webkit-autofill,
+            [data-review-mode] input:-webkit-autofill {
+              -webkit-text-fill-color: #F2F4F3 !important;
+              -webkit-box-shadow: 0 0 0 1000px #292E37 inset !important;
+              caret-color: #F2F4F3;
+            }
+          `}</style>
           {/* Header */}
           <div style={{ padding: '16px 20px', borderBottom: `1px solid ${t.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontWeight: 600, fontSize: '16px' }}>Nuevo Feedback</span>
