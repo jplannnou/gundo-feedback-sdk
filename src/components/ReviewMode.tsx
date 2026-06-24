@@ -48,7 +48,7 @@ export function ReviewMode({
   types = DEFAULT_TYPES,
   captureSelector = 'main',
 }: ReviewModeProps) {
-  const { config, client, user, contextCollector, reviewActive: ctxActive, deactivateReview } = useFeedbackContext();
+  const { config, client, user, contextCollector, reviewActive: ctxActive, deactivateReview, privateSelectors } = useFeedbackContext();
 
   // Prop wins when provided (legacy callers); otherwise read context state.
   const isActive = active !== undefined ? active : ctxActive;
@@ -161,7 +161,7 @@ export function ReviewMode({
       document.documentElement.style.cursor = 'progress';
 
       try {
-        const blob = await captureElementScreenshot(captureEl);
+        const blob = await captureElementScreenshot(captureEl, { privateSelectors });
         setScreenshotBlob(blob);
         setScreenshotPreview(URL.createObjectURL(blob));
       } catch (err) {
@@ -174,7 +174,7 @@ export function ReviewMode({
         setShowForm(true);
       }
     },
-    [isActive, showForm, captureSelector],
+    [isActive, showForm, captureSelector, privateSelectors],
   );
 
   // ── Keyboard: Escape to close ──

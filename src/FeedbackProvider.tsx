@@ -19,6 +19,13 @@ interface FeedbackContextValue {
   reviewActive: boolean;
   activateReview: () => void;
   deactivateReview: () => void;
+  /**
+   * Extra CSS selectors for sensitive regions (health data, PII) that must be
+   * dropped from feedback screenshots. The defaults `[data-gundo-private]` /
+   * `.gundo-private` always apply on top of these. `<ReviewMode>` forwards them
+   * to the screenshot capture.
+   */
+  privateSelectors: string[];
 }
 
 const FeedbackContext = createContext<FeedbackContextValue | null>(null);
@@ -39,6 +46,13 @@ interface FeedbackProviderProps {
   entityType?: string;
   /** Optional: returns custom app context (Redux state, feature flags, build version) */
   getCustomContext?: () => Record<string, unknown>;
+  /**
+   * Optional CSS selectors for sensitive regions (health data, PII) to exclude
+   * from feedback screenshots. Use this to centrally redact health zones without
+   * tagging every element (e.g. `['[data-test-result]', '.health-panel']`).
+   * `[data-gundo-private]` / `.gundo-private` are always excluded regardless.
+   */
+  privateSelectors?: string[];
   children: ReactNode;
 }
 
@@ -51,6 +65,7 @@ export function FeedbackProvider({
   entityId,
   entityType,
   getCustomContext,
+  privateSelectors,
   children,
 }: FeedbackProviderProps) {
   const client = useMemo(() => new FeedbackClient(apiBaseUrl, getToken), [apiBaseUrl, getToken]);
@@ -76,9 +91,26 @@ export function FeedbackProvider({
   const activateReview = useCallback(() => setReviewActive(true), []);
   const deactivateReview = useCallback(() => setReviewActive(false), []);
 
+  // Stabilize across renders so memo deps don't churn on a fresh array literal.
+  const privateSelectorsKey = (privateSelectors ?? []).join('|');
+  const stablePrivateSelectors = useMemo(
+    () => privateSelectors ?? [],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [privateSelectorsKey],
+  );
+
   const value = useMemo(
-    () => ({ config, client, user, contextCollector, reviewActive, activateReview, deactivateReview }),
-    [config, client, user, contextCollector, reviewActive, activateReview, deactivateReview],
+    () => ({
+      config,
+      client,
+      user,
+      contextCollector,
+      reviewActive,
+      activateReview,
+      deactivateReview,
+      privateSelectors: stablePrivateSelectors,
+    }),
+    [config, client, user, contextCollector, reviewActive, activateReview, deactivateReview, stablePrivateSelectors],
   );
 
   return <FeedbackContext.Provider value={value}>{children}</FeedbackContext.Provider>;

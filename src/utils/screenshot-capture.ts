@@ -10,11 +10,53 @@
  *   pnpm add html-to-image
  */
 
+export interface CaptureOptions {
+  /**
+   * CSS selectors for elements the host app marks as sensitive (health data,
+   * PII). They are dropped from the screenshot — the SDK never rasterizes them.
+   * The defaults `[data-gundo-private]` / `.gundo-private` always apply on top
+   * of whatever is passed here.
+   */
+  privateSelectors?: string[];
+}
+
+// Always-on markers: SDK consumers can opt any region out of capture with zero
+// config, and the SDK's own overlays are skipped so they don't get rasterized.
+const ALWAYS_EXCLUDED_SELECTORS = ['[data-gundo-private]', '.gundo-private'];
+
+/**
+ * True if a node must be kept out of the screenshot:
+ * - the SDK's own overlays (`data-review-mode`),
+ * - anything marked private by default markers or by the host's `privateSelectors`.
+ * Excluding a node also excludes its subtree (both renderers stop recursing into
+ * a dropped node), so marking a container is enough to redact everything inside.
+ * Health / PII regions in GUNDO apps are marked private to stay out of feedback
+ * screenshots (GDPR Art. 9).
+ */
+function isExcludedFromCapture(node: unknown, privateSelectors: string[]): boolean {
+  if (!(node instanceof HTMLElement)) return false;
+  if (node.dataset?.reviewMode !== undefined) return true;
+  for (const sel of privateSelectors) {
+    if (!sel) continue;
+    try {
+      if (node.matches(sel)) return true;
+    } catch {
+      // Ignore invalid selectors rather than failing the whole capture.
+    }
+  }
+  return false;
+}
+
 /**
  * Capture a screenshot of an HTML element.
  * Tries html-to-image first (modern CSS compatible), falls back to html2canvas.
  */
-export async function captureElementScreenshot(element: HTMLElement): Promise<Blob> {
+export async function captureElementScreenshot(
+  element: HTMLElement,
+  options: CaptureOptions = {},
+): Promise<Blob> {
+  const privateSelectors = [...ALWAYS_EXCLUDED_SELECTORS, ...(options.privateSelectors ?? [])];
+
   // Attempt 1: html-to-image (preferred — supports oklch, oklab, modern CSS)
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -27,10 +69,9 @@ export async function captureElementScreenshot(element: HTMLElement): Promise<Bl
         pixelRatio: 1,
         skipFonts: true,
         cacheBust: false,
-        // Skip the SDK's own overlays (highlight, form panel, toggle button)
-        // so they don't end up rasterized inside the screenshot.
-        filter: (node: HTMLElement) =>
-          !(node?.dataset && node.dataset.reviewMode !== undefined),
+        // Skip the SDK's own overlays (highlight, form panel, toggle button) and
+        // any host-marked private regions so they don't end up in the screenshot.
+        filter: (node: HTMLElement) => !isExcludedFromCapture(node, privateSelectors),
       });
       const blob = dataUrlToBlob(dataUrl);
       if (blob && blob.size > 0) return blob;
@@ -52,8 +93,7 @@ export async function captureElementScreenshot(element: HTMLElement): Promise<Bl
       useCORS: true,
       allowTaint: true,
       logging: false,
-      ignoreElements: (el: Element) =>
-        el instanceof HTMLElement && el.dataset?.reviewMode !== undefined,
+      ignoreElements: (el: Element) => isExcludedFromCapture(el, privateSelectors),
     });
     return canvasToBlob(canvas);
   } catch (err) {
@@ -96,8 +136,8 @@ function canvasToBlob(canvas: HTMLCanvasElement): Promise<Blob> {
 /**
  * Capture a screenshot of the visible viewport area.
  */
-export async function captureViewportScreenshot(): Promise<Blob> {
-  return captureElementScreenshot(document.body);
+export async function captureViewportScreenshot(options: CaptureOptions = {}): Promise<Blob> {
+  return captureElementScreenshot(document.body, options);
 }
 
 /**
