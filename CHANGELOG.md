@@ -1,3 +1,10 @@
+# [1.6.0](https://github.com/jplannnou/gundo-feedback-sdk/compare/v1.5.2...v1.6.0) (2026-06-24)
+
+
+### Features
+
+* **screenshot:** redact health/PII regions from feedback captures (GDPR Art.9) ([#10](https://github.com/jplannnou/gundo-feedback-sdk/issues/10)) ([53eaa32](https://github.com/jplannnou/gundo-feedback-sdk/commit/53eaa326322c5aeeb6e1087ddb2e26f6ab984be6))
+
 ## [1.5.2](https://github.com/jplannnou/gundo-feedback-sdk/compare/v1.5.1...v1.5.2) (2026-06-08)
 
 
