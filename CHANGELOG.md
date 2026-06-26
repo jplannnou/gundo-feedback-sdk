@@ -1,3 +1,10 @@
+# [1.7.0](https://github.com/jplannnou/gundo-feedback-sdk/compare/v1.6.0...v1.7.0) (2026-06-26)
+
+
+### Features
+
+* **types:** add NPS rating field + 'nps' feedback type ([#11](https://github.com/jplannnou/gundo-feedback-sdk/issues/11)) ([2bcd65f](https://github.com/jplannnou/gundo-feedback-sdk/commit/2bcd65f60c1097ee9101f854480fc3a9053b723b))
+
 # [1.6.0](https://github.com/jplannnou/gundo-feedback-sdk/compare/v1.5.2...v1.6.0) (2026-06-24)
 
 
