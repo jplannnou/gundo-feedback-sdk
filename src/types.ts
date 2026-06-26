@@ -1,6 +1,6 @@
 // ── Feedback Hub SDK Types ──────────────────────────────────────
 
-export type FeedbackType = 'text_selection' | 'image_area' | 'general' | 'bug' | 'improvement' | 'feature';
+export type FeedbackType = 'text_selection' | 'image_area' | 'general' | 'bug' | 'improvement' | 'feature' | 'nps';
 export type FeedbackPriority = 'critical' | 'high' | 'medium' | 'low';
 export type FeedbackStatus = 'pending' | 'in_progress' | 'applied' | 'resolved' | 'dismissed' | 'wontfix';
 export type FeedbackSeverity = 'critical' | 'suggestion' | 'question';
@@ -41,6 +41,8 @@ export interface FeedbackItem {
   entityId: string | null;
   entityType: string | null;
   screenshotUrl: string | null;
+  /** NPS / satisfaction score (0–10) when feedbackType is 'nps'; null otherwise. */
+  rating: number | null;
   context: Record<string, unknown>;
   aiAnalysis: AiAnalysis | null;
   status: FeedbackStatus;
@@ -188,6 +190,8 @@ export interface FeedbackUserInfo {
 export interface CreateFeedbackItemInput {
   comment: string;
   feedbackType?: FeedbackType;
+  /** NPS / satisfaction score (0–10). Set together with feedbackType: 'nps'. */
+  rating?: number;
   title?: string;
   module?: string;
   priority?: FeedbackPriority;
