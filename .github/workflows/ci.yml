@@ -1,0 +1,7 @@
+name: CI
+on: { pull_request: { branches: [main] } }
+permissions: { contents: read, packages: read }
+jobs:
+  lint:
+    uses: jplannnou/gundo-eslint-config/.github/workflows/lint-reusable.yml@main
+    secrets: inherit
