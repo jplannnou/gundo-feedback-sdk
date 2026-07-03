@@ -1,3 +1,11 @@
+## [1.7.1](https://github.com/jplannnou/gundo-feedback-sdk/compare/v1.7.0...v1.7.1) (2026-07-03)
+
+
+### Bug Fixes
+
+* eslint-config as optionalDependency (unblocks build/deploy/publish installs w/o GH Packages token) ([7cee8d3](https://github.com/jplannnou/gundo-feedback-sdk/commit/7cee8d32e13273b485e8394392c6e046f232a3ae))
+* regenerate lockfile with eslint-config optional (unblocks frozen installs) ([6fa631c](https://github.com/jplannnou/gundo-feedback-sdk/commit/6fa631c98525947f72954f21b914eba8cc9489ba))
+
 # [1.7.0](https://github.com/jplannnou/gundo-feedback-sdk/compare/v1.6.0...v1.7.0) (2026-06-26)
 
 
