@@ -45,10 +45,12 @@
   },
   "devDependencies": {
     "@gundo/ui": "file:../gundo-ui",
-    "@jplannnou/eslint-config": "^1.0.3",
     "@types/react": "^19.0.0",
     "eslint": "^9.39.0",
     "typescript": "^5.9.0"
   },
-  "packageManager": "pnpm@10.30.1"
+  "packageManager": "pnpm@10.30.1",
+  "optionalDependencies": {
+    "@jplannnou/eslint-config": "^1.0.3"
+  }
 }
