@@ -1,3 +1,10 @@
+# [1.9.0](https://github.com/jplannnou/gundo-feedback-sdk/compare/v1.8.0...v1.9.0) (2026-07-06)
+
+
+### Features
+
+* **provider:** prop enabled — mount estable sin ContextCollector ([ae0c59e](https://github.com/jplannnou/gundo-feedback-sdk/commit/ae0c59e7055104a373f28bb3cc8abcf6226e3f9d))
+
 ## [1.7.1](https://github.com/jplannnou/gundo-feedback-sdk/compare/v1.7.0...v1.7.1) (2026-07-03)
 
 
