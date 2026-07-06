@@ -1,7 +1,16 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { FeedbackClient } from './api/feedback-client';
-import { ContextCollector } from './utils/context-collector';
-import type { FeedbackConfig, FeedbackUserInfo } from './types';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
+import { FeedbackClient } from "./api/feedback-client";
+import { ContextCollector } from "./utils/context-collector";
+import type { FeedbackConfig, FeedbackUserInfo } from "./types";
 
 interface FeedbackContextValue {
   config: FeedbackConfig;
@@ -53,6 +62,15 @@ interface FeedbackProviderProps {
    * `[data-gundo-private]` / `.gundo-private` are always excluded regardless.
    */
   privateSelectors?: string[];
+  /**
+   * When false, the provider still mounts (STABLE element type — consumers can
+   * gate on runtime state like the user's email without React remounting their
+   * whole subtree; see gundo-ecommerce-ui TD-019) but the invasive
+   * ContextCollector (console patch, fetch/XHR intercept, click listeners,
+   * perf observers) does NOT start. Flip to true to start collecting.
+   * Default true (backwards compatible).
+   */
+  enabled?: boolean;
   children: ReactNode;
 }
 
@@ -66,9 +84,13 @@ export function FeedbackProvider({
   entityType,
   getCustomContext,
   privateSelectors,
+  enabled = true,
   children,
 }: FeedbackProviderProps) {
-  const client = useMemo(() => new FeedbackClient(apiBaseUrl, getToken), [apiBaseUrl, getToken]);
+  const client = useMemo(
+    () => new FeedbackClient(apiBaseUrl, getToken),
+    [apiBaseUrl, getToken],
+  );
   const user = getUser();
 
   const collectorRef = useRef<ContextCollector | null>(null);
@@ -78,9 +100,10 @@ export function FeedbackProvider({
   const contextCollector = collectorRef.current;
 
   useEffect(() => {
+    if (!enabled) return;
     contextCollector.start();
     return () => contextCollector.destroy();
-  }, [contextCollector]);
+  }, [contextCollector, enabled]);
 
   const config: FeedbackConfig = useMemo(
     () => ({ project, apiBaseUrl, getUser, modules, entityId, entityType }),
@@ -92,7 +115,7 @@ export function FeedbackProvider({
   const deactivateReview = useCallback(() => setReviewActive(false), []);
 
   // Stabilize across renders so memo deps don't churn on a fresh array literal.
-  const privateSelectorsKey = (privateSelectors ?? []).join('|');
+  const privateSelectorsKey = (privateSelectors ?? []).join("|");
   const stablePrivateSelectors = useMemo(
     () => privateSelectors ?? [],
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -110,15 +133,30 @@ export function FeedbackProvider({
       deactivateReview,
       privateSelectors: stablePrivateSelectors,
     }),
-    [config, client, user, contextCollector, reviewActive, activateReview, deactivateReview, stablePrivateSelectors],
+    [
+      config,
+      client,
+      user,
+      contextCollector,
+      reviewActive,
+      activateReview,
+      deactivateReview,
+      stablePrivateSelectors,
+    ],
   );
 
-  return <FeedbackContext.Provider value={value}>{children}</FeedbackContext.Provider>;
+  return (
+    <FeedbackContext.Provider value={value}>
+      {children}
+    </FeedbackContext.Provider>
+  );
 }
 
 export function useFeedbackContext() {
   const ctx = useContext(FeedbackContext);
-  if (!ctx) throw new Error('useFeedbackContext must be used within <FeedbackProvider>');
+  if (!ctx)
+    throw new Error(
+      "useFeedbackContext must be used within <FeedbackProvider>",
+    );
   return ctx;
 }
-
