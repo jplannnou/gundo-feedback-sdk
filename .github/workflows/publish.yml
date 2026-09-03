@@ -24,18 +24,18 @@ jobs:
       new-version: ${{ steps.sr.outputs.new-version }}
       released: ${{ steps.sr.outputs.released }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.4.0
         with:
           fetch-depth: 0
           persist-credentials: false
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v4.4.0
         with:
           version: 10.30.1
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4.4.0
         with:
-          node-version: 22
+          node-version: 22.23.2
           cache: pnpm
           registry-url: https://npm.pkg.github.com
           scope: '@jplannnou'
@@ -111,7 +111,7 @@ jobs:
       NODE_AUTH_TOKEN: ${{ secrets.SDK_PROPAGATE_TOKEN }}
     steps:
       - name: Checkout consumer repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.4.0
         with:
           repository: ${{ matrix.repo }}
           token: ${{ secrets.SDK_PROPAGATE_TOKEN }}
@@ -139,14 +139,14 @@ jobs:
             echo "Source: workflow fallback (no packageManager in $PKG)"
           fi
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v4.4.0
         with:
           version: ${{ steps.pnpm-version.outputs.version }}
           package_json_file: ${{ steps.pnpm-version.outputs.pkg_file }}
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4.4.0
         with:
-          node-version: 22
+          node-version: 22.23.2
           registry-url: https://npm.pkg.github.com
           scope: '@jplannnou'
 
