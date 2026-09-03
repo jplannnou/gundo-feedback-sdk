@@ -1,3 +1,10 @@
+## [1.9.1](https://github.com/jplannnou/gundo-feedback-sdk/compare/v1.9.0...v1.9.1) (2026-09-03)
+
+
+### Bug Fixes
+
+* **ci:** decir donde corre el lint, que es lo que faltaba ([#16](https://github.com/jplannnou/gundo-feedback-sdk/issues/16)) ([7c096e9](https://github.com/jplannnou/gundo-feedback-sdk/commit/7c096e97c57e986a8b1bd2307974e86b839d40fd)), closes [gundo-eslint-config#13](https://github.com/gundo-eslint-config/issues/13)
+
 # [1.9.0](https://github.com/jplannnou/gundo-feedback-sdk/compare/v1.8.0...v1.9.0) (2026-07-06)
 
 
