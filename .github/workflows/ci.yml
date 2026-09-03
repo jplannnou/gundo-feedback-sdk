@@ -4,4 +4,12 @@ permissions: { contents: read, packages: read }
 jobs:
   lint:
     uses: jplannnou/gundo-eslint-config/.github/workflows/lint-reusable.yml@main
-    secrets: inherit
+    with:
+      # Repo PUBLICO: los minutos alojados son gratis, y aqui no hay runner
+      # self-hosted al que ir — los `gundo-local` estan registrados en el org y
+      # este repo es de cuenta personal.
+      runner: ubuntu-latest
+    # Sin `secrets: inherit` a proposito: el reusable no declara bloque
+    # `secrets:` en su `workflow_call` y el unico que usa es `GITHUB_TOKEN`,
+    # que se pasa solo. `inherit` mandaria TODOS los secretos de este repo a un
+    # reusable de otra cuenta referenciado por una rama movil.
