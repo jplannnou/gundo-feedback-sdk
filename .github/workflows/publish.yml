@@ -201,16 +201,33 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.SDK_PROPAGATE_TOKEN }}
         run: |
-          BRANCH="chore/update-feedback-sdk-${VERSION}"
+          # Rama FIJA por consumidor (sin la versión) y push con force: el bump de
+          # este release REEMPLAZA al pendiente. Antes era
+          # `chore/update-feedback-sdk-${VERSION}`: una rama, un PR y un CI por
+          # release sin cerrar el anterior (151 PRs encadenados con los de
+          # @gundo/ui el 14-oct-2026). La rama sale siempre de la rama por
+          # defecto recién clonada, así que el force solo pisa el bump del bot.
+          BRANCH="chore/update-feedback-sdk"
+          TITLE="chore: update @gundo/feedback-sdk to ^${VERSION}"
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git checkout -b "$BRANCH"
           git add .
           git commit -m "chore: update @gundo/feedback-sdk to ^${VERSION} (auto-propagate)"
-          git push -u origin "$BRANCH"
+          git push --force -u origin "$BRANCH"
           printf 'Bumps `@gundo/feedback-sdk` to `^%s`.\n\nTriggered by v%s release: https://github.com/jplannnou/gundo-feedback-sdk/releases/tag/v%s\n\nAuto-generated.' \
             "$VERSION" "$VERSION" "$VERSION" > /tmp/pr-body.txt
-          gh pr create \
-            --repo "${{ matrix.repo }}" \
-            --title "chore: update @gundo/feedback-sdk to ^${VERSION}" \
-            --body-file /tmp/pr-body.txt
+          # Si el PR de la rama sigue abierto se edita (título y cuerpo); si no, se crea.
+          EXISTING=$(gh pr list --repo "${{ matrix.repo }}" --head "$BRANCH" --state open --json number --jq '.[0].number // empty')
+          if [ -n "$EXISTING" ]; then
+            gh pr edit "$EXISTING" \
+              --repo "${{ matrix.repo }}" \
+              --title "$TITLE" \
+              --body-file /tmp/pr-body.txt
+          else
+            gh pr create \
+              --repo "${{ matrix.repo }}" \
+              --head "$BRANCH" \
+              --title "$TITLE" \
+              --body-file /tmp/pr-body.txt
+          fi
