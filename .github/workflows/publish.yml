@@ -25,15 +25,15 @@ jobs:
       released: ${{ steps.sr.outputs.released }}
       node-version: ${{ steps.nvm.outputs.node-version }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.4.0
         with:
           fetch-depth: 0
           persist-credentials: false
 
       # Sin `version:`: la toma de `packageManager` en package.json.
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v4.4.0
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4.4.0
         with:
           node-version-file: .nvmrc
           cache: pnpm
@@ -117,7 +117,7 @@ jobs:
       NODE_AUTH_TOKEN: ${{ secrets.SDK_PROPAGATE_TOKEN }}
     steps:
       - name: Checkout consumer repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.4.0
         with:
           repository: ${{ matrix.repo }}
           token: ${{ secrets.SDK_PROPAGATE_TOKEN }}
@@ -145,7 +145,7 @@ jobs:
             echo "Source: workflow fallback (no packageManager in $PKG)"
           fi
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v4.4.0
         with:
           version: ${{ steps.pnpm-version.outputs.version }}
           package_json_file: ${{ steps.pnpm-version.outputs.pkg_file }}
@@ -163,7 +163,7 @@ jobs:
             echo "version=$SDK_NODE_VERSION" >> "$GITHUB_OUTPUT"
           fi
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4.4.0
         with:
           node-version: ${{ steps.node-version.outputs.version }}
           registry-url: https://npm.pkg.github.com

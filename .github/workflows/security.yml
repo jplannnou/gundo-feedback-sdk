@@ -13,7 +13,7 @@ jobs:
     name: Trivy filesystem scan
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v5.1.0
 
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@0.35.0
