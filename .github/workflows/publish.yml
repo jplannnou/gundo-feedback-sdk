@@ -23,22 +23,28 @@ jobs:
     outputs:
       new-version: ${{ steps.sr.outputs.new-version }}
       released: ${{ steps.sr.outputs.released }}
+      node-version: ${{ steps.nvm.outputs.node-version }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
           persist-credentials: false
 
+      # Sin `version:`: la toma de `packageManager` en package.json.
       - uses: pnpm/action-setup@v4
-        with:
-          version: 10.30.1
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version-file: .nvmrc
           cache: pnpm
           registry-url: https://npm.pkg.github.com
           scope: '@jplannnou'
+
+      # Versión de Node de este repo, para el job `propagate` (que hace checkout
+      # de otro repo y ya no tiene aquí el `.nvmrc`).
+      - name: Exponer la versión de Node
+        id: nvm
+        run: echo "node-version=$(tr -d 'v \r\n' < .nvmrc)" >> "$GITHUB_OUTPUT"
 
       - name: Clone @gundo/ui (peer dependency build)
         run: |
@@ -144,9 +150,22 @@ jobs:
           version: ${{ steps.pnpm-version.outputs.version }}
           package_json_file: ${{ steps.pnpm-version.outputs.pkg_file }}
 
+      # Node del propio consumidor si fija `.nvmrc` (cada uno instala con su
+      # versión); si no, la de este repo.
+      - name: Resolve Node version
+        id: node-version
+        env:
+          SDK_NODE_VERSION: ${{ needs.release.outputs.node-version }}
+        run: |
+          if [ -f .nvmrc ]; then
+            echo "version=$(tr -d 'v \r\n' < .nvmrc)" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=$SDK_NODE_VERSION" >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: ${{ steps.node-version.outputs.version }}
           registry-url: https://npm.pkg.github.com
           scope: '@jplannnou'
 

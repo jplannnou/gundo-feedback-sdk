@@ -13,3 +13,7 @@ jobs:
     # `secrets:` en su `workflow_call` y el unico que usa es `GITHUB_TOKEN`,
     # que se pasa solo. `inherit` mandaria TODOS los secretos de este repo a un
     # reusable de otra cuenta referenciado por una rama movil.
+  node-policy:
+    uses: jplannnou/gundo-eslint-config/.github/workflows/node-policy.yml@main
+    with:
+      runner: ubuntu-latest
